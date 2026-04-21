@@ -1,0 +1,11 @@
+services:
+  eva-covenant:
+    build: .
+    ports:
+      - "3002:3002"
+    volumes:
+      - eva-data:/app/prisma
+    restart: unless-stopped
+
+volumes:
+  eva-data:

@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./eva-covenant.db"
+}
+
+model Question {
+  id           Int      @id @default(autoincrement())
+  dimCode      String   // A1, A2, ... E3
+  text         String
+  order        Int      // 排序序号
+  isGate       Boolean  @default(false)
+  isTrigger    Boolean  @default(false)
+  translations String?  // JSON: {"en":{"text":"..."},"ja":{"text":"..."},...}
+  options      Option[]
+  createdAt    DateTime @default(now())
+}
+
+model Option {
+  id           Int      @id @default(autoincrement())
+  questionId   Int
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label        String
+  score        Int      @default(0)  // 0 表示门控/触发题选项
+  value        String?  // 门控题路径值
+  trigger      String?  // 触发题特殊人格代码
+  order        Int
+  translations String?  // JSON: {"en":{"label":"..."},"ja":{"label":"..."},...}
+}
+
+model PersonalityType {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  name         String
+  group        String
+  vector       String
+  slogan       String
+  desc         String
+  evaUnit      String?
+  emoji        String
+  translations String?  // JSON: {"en":{"name":"...","slogan":"...","desc":"...","evaUnit":"..."},...}
+  createdAt    DateTime @default(now())
+}
+
+model SpecialType {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  name         String
+  triggerType  String
+  triggerCond  String
+  slogan       String
+  desc         String
+  emoji        String
+  translations String?  // JSON: {"en":{"name":"...","slogan":"...","desc":"..."},...}
+  createdAt    DateTime @default(now())
+}
+
+model TestRecord {
+  id          Int      @id @default(autoincrement())
+  code        String   // 匹配的人格代码
+  similarity  Float
+  isSpecial   Boolean  @default(false)
+  isBoundary  Boolean  @default(false)
+  scores      String   // JSON: [6,5,7,...]
+  vector      String   // 用户向量 "HML-MML-..."
+  gateAnswer  String?
+  triggerAnswer String?
+  userAgent   String?
+  referer     String?
+  utmSource   String?
+  utmMedium   String?
+  shareBy     String?
+  createdAt   DateTime @default(now())
+  answers     Answer[]
+}
+
+model Answer {
+  id           Int        @id @default(autoincrement())
+  recordId     Int
+  record       TestRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  questionDim  String     // 维度代码
+  questionText String
+  selectedLabel String
+  selectedScore Int
+}
+
+model EventLog {
+  id        Int      @id @default(autoincrement())
+  event     String   // page_view, quiz_start, quiz_complete, share_click, share_success
+  page      String?
+  meta      String?  // JSON 附加数据
+  utmSource String?
+  sessionId String?
+  createdAt DateTime @default(now())
+}

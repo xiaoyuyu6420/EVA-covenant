@@ -1,0 +1,187 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-tech);
+  --font-mono: var(--font-tech);
+  --font-heading: var(--font-title);
+  --color-sidebar-ring: var(--ring);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-accent-foreground: var(--accent-foreground);
+  --color-sidebar-accent: var(--accent);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar: var(--card);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+}
+
+:root {
+  --background: #050505;
+  --foreground: #e0e0e0;
+  --card: #111111;
+  --card-foreground: #e0e0e0;
+  --popover: #111111;
+  --popover-foreground: #e0e0e0;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #e0e0e0;
+  --muted: #222222;
+  --muted-foreground: #666666;
+  --accent: #52ff00;
+  --accent-foreground: #000000;
+  --destructive: #ff003c;
+  --border: #333333;
+  --input: #222222;
+  --ring: #7c3aed;
+  --chart-1: #a855f7;
+  --chart-2: #7c3aed;
+  --chart-3: #4c1d95;
+  --chart-4: #2e1065;
+  --chart-5: #52ff00;
+
+  /* EVA custom */
+  --eva-purple: #7c3aed;
+  --eva-purple-light: #a855f7;
+  --eva-purple-dark: #4c1d95;
+  --eva-purple-deep: #2e1065;
+  --eva-green: #52ff00;
+  --nerv-orange: #ff8c00;
+  --nerv-red: #ff003c;
+
+  /* Dynamic theme (overridden by JS per result) */
+  --theme-color: #a855f7;
+  --theme-glow: rgba(168, 85, 247, 0.5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* CRT scanlines */
+    background-image:
+      linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  html {
+    font-family: var(--font-tech);
+  }
+}
+
+/* CRT scanline overlay */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Caution tape */
+.caution-tape {
+  height: 12px;
+  width: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--nerv-orange),
+    var(--nerv-orange) 10px,
+    #000 10px,
+    #000 20px
+  );
+}
+
+/* EVA tech text */
+.eva-text {
+  font-family: var(--font-tech);
+  letter-spacing: 0.1em;
+}
+
+.nerv-label {
+  font-family: var(--font-tech);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Blink animation */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.5; }
+}
+
+/* Fill-on-hover button */
+.eva-btn {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.eva-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 0%; height: 100%;
+  z-index: -1;
+  transition: width 0.3s ease;
+  background: var(--eva-green);
+}
+.eva-btn:hover::before, .eva-btn:active::before {
+  width: 100%;
+}
+.eva-btn:hover, .eva-btn:active {
+  color: #000 !important;
+}
+
+/* Secondary button variant */
+.eva-btn-secondary::before {
+  background: var(--muted-foreground);
+}
+.eva-btn-secondary:hover, .eva-btn-secondary:active {
+  color: #fff !important;
+}
+
+/* Theme button variant */
+.eva-btn-theme::before {
+  background: var(--theme-color);
+}
+.eva-btn-theme:hover, .eva-btn-theme:active {
+  color: #000 !important;
+}

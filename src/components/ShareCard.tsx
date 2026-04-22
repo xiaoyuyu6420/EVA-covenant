@@ -4,6 +4,7 @@ import { forwardRef } from "react";
 import type { MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { personalityTypes, groups } from "@/lib/quiz-data";
+import type { Lang } from "@/lib/i18n/context";
 
 interface Props {
   top: MatchResult;

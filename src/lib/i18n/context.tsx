@@ -30,26 +30,24 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function detectLang(): Lang {
+  if (typeof window === "undefined") return "zh-CN";
+  const saved = localStorage.getItem(STORAGE_KEY) as Lang | null;
+  if (saved && translations[saved]) return saved;
+  const bl = navigator.language || "";
+  return bl.startsWith("ja") ? "ja"
+    : bl.startsWith("ko") ? "ko"
+    : bl.startsWith("zh") && (bl.includes("TW") || bl.includes("HK") || bl.includes("Hant")) ? "zh-TW"
+    : bl.startsWith("zh") ? "zh-CN"
+    : "en";
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("zh-CN");
+  const [lang, setLangState] = useState<Lang>(detectLang);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Lang | null;
-    if (saved && translations[saved]) {
-      setLangState(saved);
-      return;
-    }
-    // Auto-detect browser language
-    const browserLang = navigator.language || "";
-    const detected: Lang = browserLang.startsWith("ja") ? "ja"
-      : browserLang.startsWith("ko") ? "ko"
-      : browserLang.startsWith("zh") && (browserLang.includes("TW") || browserLang.includes("HK") || browserLang.includes("Hant"))
-        ? "zh-TW"
-      : browserLang.startsWith("zh") ? "zh-CN"
-      : "en";
-    setLangState(detected);
-    localStorage.setItem(STORAGE_KEY, detected);
-  }, []);
+    localStorage.setItem(STORAGE_KEY, lang);
+  }, [lang]);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);

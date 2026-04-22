@@ -122,9 +122,17 @@ export function useQuiz() {
   const stateRef = useRef({ currentQ, qList, dimScores, gateValue, triggerValue });
   stateRef.current = { currentQ, qList, dimScores, gateValue, triggerValue };
 
-  // Fetch quiz data from API
+  const screenRef = useRef<Screen>(screen);
+  screenRef.current = screen;
+
+  // Fetch quiz data from API — re-fetch on language change if still on welcome
+  const langRef = useRef(lang);
   useEffect(() => {
-    if (initialized.current) return;
+    const langChanged = langRef.current !== lang;
+    langRef.current = lang;
+
+    if (initialized.current && !langChanged) return;
+    if (initialized.current && screenRef.current !== "welcome" && screenRef.current !== "loading") return;
     initialized.current = true;
 
     fetch(`/api/quiz?lang=${lang}`)
@@ -154,7 +162,7 @@ export function useQuiz() {
         setQList([]);
         setScreen("welcome");
       });
-  }, []);
+  }, [lang]);
 
   const totalQ = qList.length;
   const progress = totalQ > 0 ? currentQ / totalQ : 0;

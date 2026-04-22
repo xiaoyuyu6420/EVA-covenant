@@ -90,7 +90,7 @@ export default function ResultScreen({ result, onRestart }: Props) {
     : (personalityType?.group ?? "adam");
   const theme = GROUP_THEME[groupKey] ?? GROUP_THEME.adam;
   const evaNum = getSilhouette(top.code, top.evaUnit);
-  const group = groups[groupKey as keyof typeof groups];
+  const group = groups[groupKey as keyof typeof groups] ?? null;
 
   useEffect(() => {
     document.documentElement.style.setProperty("--theme-color", theme.color);

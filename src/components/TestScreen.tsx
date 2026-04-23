@@ -94,18 +94,18 @@ export default function TestScreen({ currentQ, totalQ, progress, question, onAns
                 key={idx}
                 onClick={() => onAnswer(idx)}
                 className="flex items-center text-left px-4 py-4 bg-[#0a0a0a] border border-[#333]
-                           hover:border-[var(--theme-color)] hover:bg-[var(--theme-glow)]
-                           transition-all duration-200 cursor-pointer"
+                           hover:border-[var(--theme-color)]
+                           eva-btn eva-btn-option transition-colors cursor-pointer"
                 whileTap={{ scale: 0.98 }}
               >
                 <span
-                  className="font-bold text-[1.2rem] mr-4"
+                  className="font-bold text-[1.2rem] mr-4 relative z-10"
                   style={{ fontFamily: "var(--font-tech)", color: "var(--theme-color)" }}
                 >
                   {String.fromCharCode(65 + idx)}.
                 </span>
                 <span
-                  className="text-[#ccc] text-[0.95rem]"
+                  className="text-[#ccc] text-[0.95rem] relative z-10"
                   style={{ fontFamily: "var(--font-title)" }}
                 >
                   {opt.label}

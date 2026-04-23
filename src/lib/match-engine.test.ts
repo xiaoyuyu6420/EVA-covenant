@@ -14,8 +14,8 @@ import { DIMENSIONS, GRADE_VALUES, DIM_WEIGHTS, ALGO_PARAMS } from "@/lib/types"
 
 const matchData: MatchInput = { personalityTypes, specialTypes };
 
-function match(scores: number[], gate?: string, trigger?: string) {
-  return match(scores, gate, trigger, matchData);
+function runMatch(scores: number[], gate?: string, trigger?: string) {
+  return matchPersonality(scores, gate, trigger, matchData);
 }
 
 // ============================================================
@@ -96,7 +96,7 @@ describe("parseVector: 向量字符串解析", () => {
 describe("matchPersonality: 人格匹配引擎", () => {
   it("正常匹配：返回完整结果结构", () => {
     const scores = [3, 2, 1, 4, 3, 2, 1, 5, 4, 3, 2, 1, 4, 3, 2];
-    const result = match(scores);
+    const result = runMatch(scores);
     
     // 结构完整性
     expect(result.top).toBeDefined();
@@ -118,7 +118,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
 
   it("top3 相似度降序排列", () => {
     const scores = [2, 3, 1, 5, 4, 2, 1, 3, 4, 2, 5, 1, 3, 4, 2];
-    const result = match(scores);
+    const result = runMatch(scores);
     
     for (let i = 1; i < result.top3.length; i++) {
       expect(result.top3[i - 1].similarity).toBeGreaterThanOrEqual(result.top3[i].similarity);
@@ -127,8 +127,8 @@ describe("matchPersonality: 人格匹配引擎", () => {
 
   it("匹配是确定性的——相同输入永远产出相同结果", () => {
     const scores = [3, 1, 5, 2, 4, 6, 0, 3, 2, 5, 1, 4, 6, 2, 3];
-    const r1 = match(scores);
-    const r2 = match(scores);
+    const r1 = runMatch(scores);
+    const r2 = runMatch(scores);
     expect(r1.top.code).toBe(r2.top.code);
     expect(r1.top.similarity).toBe(r2.top.similarity);
     expect(r1.userVector).toEqual(r2.userVector);
@@ -142,7 +142,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[6] = 5;  // C1 共情力 >= 5
       scores[2] = 2;  // A3 AT力场 <= 4
       
-      const result = match(scores, "complement", "CMPL");
+      const result = runMatch(scores, "complement", "CMPL");
       expect(result.top.code).toBe("CMPL");
       expect(result.top.isSpecial).toBe(true);
       expect(result.top.similarity).toBe(100);
@@ -153,7 +153,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[6] = 3;  // C1 共情力 < 5
       scores[2] = 2;  // A3 AT力场 <= 4
       
-      const result = match(scores, "complement", "CMPL");
+      const result = runMatch(scores, "complement", "CMPL");
       expect(result.top.code).not.toBe("CMPL");
     });
 
@@ -162,7 +162,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[6] = 5;  // C1 共情力 >= 5
       scores[2] = 5;  // A3 AT力场 > 4
       
-      const result = match(scores, "complement", "CMPL");
+      const result = runMatch(scores, "complement", "CMPL");
       expect(result.top.code).not.toBe("CMPL");
     });
 
@@ -171,7 +171,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[6] = 5;
       scores[2] = 2;
       
-      const result = match(scores, "transcend", "CMPL");
+      const result = runMatch(scores, "transcend", "CMPL");
       expect(result.top.code).not.toBe("CMPL");
     });
 
@@ -180,7 +180,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[6] = 5;
       scores[2] = 2;
       
-      const result = match(scores, "complement", undefined);
+      const result = runMatch(scores, "complement", undefined);
       expect(result.top.code).not.toBe("CMPL");
     });
   });
@@ -193,7 +193,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[0] = 5;   // A1 同步率 >= 5
       scores[11] = 5;  // D3 存在追问 >= 5
       
-      const result = match(scores, "transcend", "U13G");
+      const result = runMatch(scores, "transcend", "U13G");
       expect(result.top.code).toBe("U13G");
       expect(result.top.isSpecial).toBe(true);
       expect(result.top.similarity).toBe(100);
@@ -204,7 +204,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[0] = 3;   // A1 < 5
       scores[11] = 5;
       
-      const result = match(scores, "transcend", "U13G");
+      const result = runMatch(scores, "transcend", "U13G");
       expect(result.top.code).not.toBe("U13G");
     });
 
@@ -213,7 +213,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
       scores[0] = 5;
       scores[11] = 3;  // D3 < 5
       
-      const result = match(scores, "transcend", "U13G");
+      const result = runMatch(scores, "transcend", "U13G");
       expect(result.top.code).not.toBe("U13G");
     });
   });
@@ -223,7 +223,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
     it("top1/top2 差距 < delta 且相似度 < threshold → 兜底 ADAM", () => {
       // 全零分数：所有模板距离最大，相似度最低
       const scores = new Array(15).fill(0);
-      const result = match(scores);
+      const result = runMatch(scores);
       
       // 可能触发 ADAM 兜底或匹配到某个类型
       // 关键是结果必须合法
@@ -235,18 +235,18 @@ describe("matchPersonality: 人格匹配引擎", () => {
       // 构造一个接近多个模板的分数
       // 这取决于具体数据，但我们验证 isBoundary 字段存在
       const scores = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
-      const result = match(scores);
+      const result = runMatch(scores);
       expect(typeof result.top.isBoundary).toBe("boolean");
     });
 
     it("全零分数不崩溃", () => {
       const scores = new Array(15).fill(0);
-      expect(() => match(scores)).not.toThrow();
+      expect(() => runMatch(scores)).not.toThrow();
     });
 
     it("全满分分数不崩溃", () => {
       const scores = new Array(15).fill(6);
-      expect(() => match(scores)).not.toThrow();
+      expect(() => runMatch(scores)).not.toThrow();
     });
   });
 
@@ -254,8 +254,8 @@ describe("matchPersonality: 人格匹配引擎", () => {
   describe("groupPosition 确定性", () => {
     it("groupPosition 不使用 Math.random——相同输入结果一致", () => {
       const scores = [2, 4, 1, 3, 5, 2, 1, 4, 3, 2, 5, 1, 3, 4, 2];
-      const r1 = match(scores);
-      const r2 = match(scores);
+      const r1 = runMatch(scores);
+      const r2 = runMatch(scores);
       expect(r1.groupPosition.rank).toBe(r2.groupPosition.rank);
       expect(r1.groupPosition.total).toBe(r2.groupPosition.total);
     });
@@ -263,7 +263,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
     it("rank 在合理范围 [1, total]", () => {
       for (let i = 0; i < 10; i++) {
         const scores = Array.from({ length: 15 }, () => Math.floor(Math.random() * 7));
-        const result = match(scores);
+        const result = runMatch(scores);
         expect(result.groupPosition.rank).toBeGreaterThanOrEqual(1);
         expect(result.groupPosition.rank).toBeLessThanOrEqual(result.groupPosition.total);
       }
@@ -414,14 +414,14 @@ describe("types: 类型系统约束", () => {
 describe("端到端匹配场景", () => {
   it("全选最低分(1) → 可完成匹配", () => {
     const scores = new Array(15).fill(2); // 2题×1分=2
-    const result = match(scores);
+    const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
     expect(result.top3).toHaveLength(3);
   });
 
   it("全选最高分(3) → 可完成匹配", () => {
     const scores = new Array(15).fill(6); // 2题×3分=6
-    const result = match(scores);
+    const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
     expect(result.top3).toHaveLength(3);
   });
@@ -430,7 +430,7 @@ describe("端到端匹配场景", () => {
     // 只有A1维度最高，其他最低
     const scores = new Array(15).fill(0);
     scores[0] = 6;
-    const result = match(scores);
+    const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
   });
 
@@ -448,7 +448,7 @@ describe("端到端匹配场景", () => {
     ];
     
     testCases.forEach((scores) => {
-      const result = match(scores);
+      const result = runMatch(scores);
       expect(allCodes.has(result.top.code)).toBe(true);
       result.top3.forEach((t) => {
         expect(allCodes.has(t.code)).toBe(true);

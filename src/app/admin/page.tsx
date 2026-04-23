@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { DIMENSIONS, ALGO_PARAMS } from "@/lib/types";
 
-type Tab = "stats" | "records" | "questions" | "types";
+type Tab = "stats" | "records" | "questions" | "types" | "import";
 type ContentLang = "zh-CN" | "en" | "ja" | "ko" | "zh-TW";
 
 const LANG_TABS: { code: ContentLang; label: string }[] = [
@@ -129,6 +129,7 @@ export default function AdminPage() {
             ["records", "测试记录"],
             ["questions", "题目管理"],
             ["types", "人格管理"],
+            ["import", "Excel导入"],
           ] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -149,6 +150,7 @@ export default function AdminPage() {
         {tab === "records" && <RecordsPanel />}
         {tab === "questions" && <QuestionsPanel />}
         {tab === "types" && <TypesPanel />}
+        {tab === "import" && <ImportPanel />}
       </div>
     </div>
   );
@@ -773,6 +775,100 @@ function TypesPanel() {
         <h3 className="nerv-label mb-4">SPECIAL TYPES — 特殊人格 ({specials.length})</h3>
         <div className="space-y-3">
           {specials.map((s) => renderType(s, true))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ===== Excel 导入面板 =====
+function ImportPanel() {
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; imported?: Record<string, number>; error?: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/import", { method: "POST", body: fd });
+      const data = await res.json();
+      setResult(data);
+    } catch {
+      setResult({ ok: false, error: "Upload failed" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Download template */}
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">STEP 1 — 下载模板</h3>
+        <p className="text-xs text-[#94a3b8] mb-4">
+          Excel 包含 3 个表：Questions（题目）、PersonalityTypes（人格）、SpecialTypes（特殊人格）。
+          中文列为基准列，<code className="text-[#4ade80]">_en</code> / <code className="text-[#4ade80]">_ja</code> / <code className="text-[#4ade80]">_ko</code> / <code className="text-[#4ade80]">_zh-TW</code> 为翻译列。
+        </p>
+        <a
+          href="/api/admin/import"
+          className="inline-block px-4 py-2 text-sm eva-text tracking-wider border border-[#7c3aed] text-[#7c3aed] hover:bg-[#7c3aed]/10 transition-colors cursor-pointer"
+        >
+          下载模板 Excel
+        </a>
+      </div>
+
+      {/* Upload */}
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">STEP 2 — 上传填写好的 Excel</h3>
+        <p className="text-xs text-[#f97316] mb-4">
+          ⚠ 上传会清空并替换所有题目和人格数据，请确保 Excel 内容完整。
+        </p>
+        <div className="flex items-center gap-4">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="text-sm text-[#94a3b8] file:mr-4 file:py-2 file:px-4 file:border file:border-[#333] file:bg-[#1e1b2e] file:text-[#94a3b8] file:text-xs file:eva-text file:cursor-pointer file:transition-colors hover:file:border-[#7c3aed] hover:file:text-[#7c3aed]"
+          />
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            className="px-6 py-2 text-sm eva-text tracking-wider border border-[#4ade80] text-[#4ade80] hover:bg-[#4ade80]/10 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {uploading ? "导入中..." : "开始导入"}
+          </button>
+        </div>
+
+        {result && (
+          <div className={`mt-4 p-3 rounded border text-xs eva-text ${
+            result.ok ? "border-[#4ade80]/30 bg-[#4ade80]/5 text-[#4ade80]" : "border-[#ef4444]/30 bg-[#ef4444]/5 text-[#ef4444]"
+          }`}>
+            {result.ok ? (
+              <div>
+                <p className="font-bold mb-1">导入成功</p>
+                <p>题目: {result.imported?.questions} | 选项: {result.imported?.options} | 人格: {result.imported?.personalityTypes} | 特殊: {result.imported?.specialTypes}</p>
+              </div>
+            ) : (
+              <p>{result.error}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Column reference */}
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-3">Questions 表列说明</h3>
+        <div className="text-[10px] text-[#64748b] space-y-1 leading-relaxed eva-text">
+          <p><code className="text-[#94a3b8]">dimCode</code> 维度代码（A1~E3 或 GATE/TRIGGER）</p>
+          <p><code className="text-[#94a3b8]">order</code> 排序序号 · <code className="text-[#94a3b8]">type</code> regular/gate/trigger</p>
+          <p><code className="text-[#94a3b8]">value</code> 门控题路径值 · <code className="text-[#94a3b8]">trigger</code> 触发题代码</p>
+          <p><code className="text-[#94a3b8]">text</code> 中文题目 · <code className="text-[#94a3b8]">text_en/ja/ko/zh-TW</code> 翻译</p>
+          <p><code className="text-[#94a3b8]">A~E</code> 中文选项 · <code className="text-[#94a3b8]">A_en</code> 英文选项 · <code className="text-[#94a3b8]">A_score</code> 分值</p>
         </div>
       </div>
     </motion.div>

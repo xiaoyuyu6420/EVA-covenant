@@ -185,3 +185,17 @@ body::after {
 .eva-btn-theme:hover, .eva-btn-theme:active {
   color: #000 !important;
 }
+
+/* Quiz option button variant — subtle theme-color slide */
+.eva-btn-option::before {
+  background: var(--theme-color);
+  opacity: 0.2;
+}
+.eva-btn-option:hover::before, .eva-btn-option:active::before {
+  width: 100%;
+  opacity: 0.25;
+}
+.eva-btn-option:hover, .eva-btn-option:active {
+  color: #fff !important;
+  border-color: var(--theme-color) !important;
+}

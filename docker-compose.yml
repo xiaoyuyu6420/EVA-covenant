@@ -2,7 +2,7 @@ services:
   eva-covenant:
     build: .
     ports:
-      - "${PORT:-3002}:3002"
+      - "${PORT:-3004}:3004"
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - ADMIN_SECRET=${ADMIN_SECRET:-eva-covenant-secret}

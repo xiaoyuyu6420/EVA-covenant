@@ -3,45 +3,67 @@ import { prisma } from "@/lib/prisma";
 
 const LANGS = ["en", "ja", "ko", "zh-TW"] as const;
 
-// ===== GET: Download template =====
+// ===== GET: Download current quiz data as Excel =====
 export async function GET() {
-  // Dynamic import xlsx (server-only)
   const XLSX = await import("xlsx");
+
+  // Fetch all data from database
+  const [questions, personalityTypes, specialTypes] = await Promise.all([
+    prisma.question.findMany({
+      orderBy: { order: "asc" },
+      include: { options: { orderBy: { order: "asc" } } },
+    }),
+    prisma.personalityType.findMany({ orderBy: { code: "asc" } }),
+    prisma.specialType.findMany({ orderBy: { code: "asc" } }),
+  ]);
 
   // --- Questions sheet ---
   const qHeaders = [
-    "dimCode", "order", "type", "value", "trigger",
+    "dimCode", "order", "type",
     "text", "text_en", "text_ja", "text_ko", "text_zh-TW",
-    "A", "A_en", "A_ja", "A_ko", "A_zh-TW", "A_score",
-    "B", "B_en", "B_ja", "B_ko", "B_zh-TW", "B_score",
-    "C", "C_en", "C_ja", "C_ko", "C_zh-TW", "C_score",
-    "D", "D_en", "D_ja", "D_ko", "D_zh-TW", "D_score",
-    "E", "E_en", "E_ja", "E_ko", "E_zh-TW", "E_score",
+    "A", "A_en", "A_ja", "A_ko", "A_zh-TW", "A_score", "A_value", "A_trigger",
+    "B", "B_en", "B_ja", "B_ko", "B_zh-TW", "B_score", "B_value", "B_trigger",
+    "C", "C_en", "C_ja", "C_ko", "C_zh-TW", "C_score", "C_value", "C_trigger",
+    "D", "D_en", "D_ja", "D_ko", "D_zh-TW", "D_score", "D_value", "D_trigger",
+    "E", "E_en", "E_ja", "E_ko", "E_zh-TW", "E_score", "E_value", "E_trigger",
   ];
 
-  // Sample rows for reference
-  const qSample = [
-    {
-      dimCode: "A1", order: 0, type: "regular", value: "", trigger: "",
-      text: "插入栓内LCL灌满的瞬间，你感受到的是？",
-      text_en: "", text_ja: "", text_ko: "", "text_zh-TW": "",
-      A: "压迫与窒息，本能地想要挣脱", A_en: "", A_ja: "", A_ko: "", A_zh_TW: "", A_score: 1,
-      B: "一种奇异的安宁，仿佛回到母体", B_en: "", B_ja: "", B_ko: "", B_zh_TW: "", B_score: 2,
-      C: "LCL就是你，你就是LCL——边界消失了", C_en: "", C_ja: "", C_ko: "", C_zh_TW: "", C_score: 3,
-      D: "", D_en: "", D_ja: "", D_ko: "", D_zh_TW: "", D_score: 0,
-      E: "", E_en: "", E_ja: "", E_ko: "", E_zh_TW: "", E_score: 0,
-    },
-    {
-      dimCode: "GATE", order: 30, type: "gate", value: "", trigger: "",
-      text: "（门控题题目文本）",
-      text_en: "", text_ja: "", text_ko: "", "text_zh-TW": "",
-      A: "选项1", A_en: "", A_ja: "", A_ko: "", A_zh_TW: "", A_score: 0,
-      B: "选项2", B_en: "", B_ja: "", B_ko: "", B_zh_TW: "", B_score: 0,
-      C: "", C_en: "", C_ja: "", C_ko: "", C_zh_TW: "", C_score: 0,
-      D: "", D_en: "", D_ja: "", D_ko: "", D_zh_TW: "", D_score: 0,
-      E: "", E_en: "", E_ja: "", E_ko: "", E_zh_TW: "", E_score: 0,
-    },
-  ];
+  const qRows: Record<string, string | number>[] = [];
+  for (const q of questions) {
+    const qTrans = parseTranslations(q.translations);
+    let row: Record<string, string | number> = {
+      dimCode: q.dimCode,
+      order: q.order,
+      type: q.isGate ? "gate" : q.isTrigger ? "trigger" : "regular",
+      text: q.text,
+    };
+    for (const lang of LANGS) {
+      row[`text_${lang}`] = qTrans[lang]?.text ?? "";
+    }
+
+    const optionLetters = ["A", "B", "C", "D", "E"];
+    for (let i = 0; i < optionLetters.length; i++) {
+      const letter = optionLetters[i];
+      const opt = q.options[i];
+      if (opt) {
+        const optTrans = parseTranslations(opt.translations);
+        row[letter] = opt.label;
+        for (const lang of LANGS) {
+          row[`${letter}_${lang}`] = optTrans[lang]?.label ?? "";
+        }
+        row[`${letter}_score`] = opt.score;
+        row[`${letter}_value`] = opt.value ?? "";
+        row[`${letter}_trigger`] = opt.trigger ?? "";
+      } else {
+        row[letter] = "";
+        for (const lang of LANGS) row[`${letter}_${lang}`] = "";
+        row[`${letter}_score`] = 0;
+        row[`${letter}_value`] = "";
+        row[`${letter}_trigger`] = "";
+      }
+    }
+    qRows.push(row);
+  }
 
   // --- Personality Types sheet ---
   const pHeaders = [
@@ -52,15 +74,27 @@ export async function GET() {
     "evaUnit", "evaUnit_en", "evaUnit_ja", "evaUnit_ko", "evaUnit_zh-TW",
   ];
 
-  const pSample = [
-    {
-      code: "SYNC01", group: "unit01", vector: "HML-MML-HHL-MHM-HLL", emoji: "💜",
-      name: "同调型", name_en: "", name_ja: "", name_ko: "", name_zh_TW: "",
-      slogan: "在沉默中听见心跳", slogan_en: "", slogan_ja: "", slogan_ko: "", slogan_zh_TW: "",
-      desc: "（人格描述文本）", desc_en: "", desc_ja: "", desc_ko: "", desc_zh_TW: "",
-      evaUnit: "EVA 初号机", evaUnit_en: "", evaUnit_ja: "", evaUnit_ko: "", evaUnit_zh_TW: "",
-    },
-  ];
+  const pRows: Record<string, string | number>[] = [];
+  for (const p of personalityTypes) {
+    const trans = parseTranslations(p.translations);
+    const row: Record<string, string | number> = {
+      code: p.code,
+      group: p.group,
+      vector: p.vector,
+      emoji: p.emoji,
+      name: p.name,
+      slogan: p.slogan,
+      desc: p.desc,
+      evaUnit: p.evaUnit ?? "",
+    };
+    for (const lang of LANGS) {
+      row[`name_${lang}`] = trans[lang]?.name ?? "";
+      row[`slogan_${lang}`] = trans[lang]?.slogan ?? "";
+      row[`desc_${lang}`] = trans[lang]?.desc ?? "";
+      row[`evaUnit_${lang}`] = trans[lang]?.evaUnit ?? "";
+    }
+    pRows.push(row);
+  }
 
   // --- Special Types sheet ---
   const sHeaders = [
@@ -70,27 +104,34 @@ export async function GET() {
     "desc", "desc_en", "desc_ja", "desc_ko", "desc_zh-TW",
   ];
 
-  const sSample = [
-    {
-      code: "CMPL", triggerType: "gate+trigger", triggerCond: "gate=complement,trigger=CMPL,scores[C1]>=5,scores[A3]<=4", emoji: "🧬",
-      name: "人类补完", name_en: "", name_ja: "", name_ko: "", name_zh_TW: "",
-      slogan: "", slogan_en: "", slogan_ja: "", slogan_ko: "", slogan_zh_TW: "",
-      desc: "（特殊人格描述）", desc_en: "", desc_ja: "", desc_ko: "", desc_zh_TW: "",
-    },
-  ];
+  const sRows: Record<string, string | number>[] = [];
+  for (const s of specialTypes) {
+    const trans = parseTranslations(s.translations);
+    const row: Record<string, string | number> = {
+      code: s.code,
+      triggerType: s.triggerType,
+      triggerCond: s.triggerCond,
+      emoji: s.emoji,
+      name: s.name,
+      slogan: s.slogan,
+      desc: s.desc,
+    };
+    for (const lang of LANGS) {
+      row[`name_${lang}`] = trans[lang]?.name ?? "";
+      row[`slogan_${lang}`] = trans[lang]?.slogan ?? "";
+      row[`desc_${lang}`] = trans[lang]?.desc ?? "";
+    }
+    sRows.push(row);
+  }
 
   const wb = XLSX.utils.book_new();
-  const ws1 = XLSX.utils.json_to_sheet([Object.fromEntries(qHeaders.map((h) => [h, ""]))], { header: qHeaders });
-  // Add sample rows below header
-  XLSX.utils.sheet_add_json(ws1, qSample, { header: qHeaders, origin: "A2", skipHeader: true });
+  const ws1 = XLSX.utils.json_to_sheet(qRows, { header: qHeaders });
   XLSX.utils.book_append_sheet(wb, ws1, "Questions");
 
-  const ws2 = XLSX.utils.json_to_sheet([Object.fromEntries(pHeaders.map((h) => [h, ""]))], { header: pHeaders });
-  XLSX.utils.sheet_add_json(ws2, pSample, { header: pHeaders, origin: "A2", skipHeader: true });
+  const ws2 = XLSX.utils.json_to_sheet(pRows, { header: pHeaders });
   XLSX.utils.book_append_sheet(wb, ws2, "PersonalityTypes");
 
-  const ws3 = XLSX.utils.json_to_sheet([Object.fromEntries(sHeaders.map((h) => [h, ""]))], { header: sHeaders });
-  XLSX.utils.sheet_add_json(ws3, sSample, { header: sHeaders, origin: "A2", skipHeader: true });
+  const ws3 = XLSX.utils.json_to_sheet(sRows, { header: sHeaders });
   XLSX.utils.book_append_sheet(wb, ws3, "SpecialTypes");
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
@@ -98,9 +139,14 @@ export async function GET() {
   return new Response(buf, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": "attachment; filename=eva-covenant-template.xlsx",
+      "Content-Disposition": "attachment; filename=eva-covenant-quiz.xlsx",
     },
   });
+}
+
+function parseTranslations(raw: string | null | undefined): Record<string, Record<string, string>> {
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
 }
 
 // ===== POST: Upload and import =====
@@ -119,21 +165,32 @@ export async function POST(req: NextRequest) {
     if (!qSheet) return NextResponse.json({ error: "Missing 'Questions' sheet" }, { status: 400 });
     const qRows = XLSX.utils.sheet_to_json<Record<string, string | number>>(qSheet);
 
-    // Clear old questions + options
-    await prisma.option.deleteMany();
-    await prisma.question.deleteMany();
+    const skippedRows: string[] = [];
+    const questionCreates: Array<{
+      data: {
+        dimCode: string;
+        text: string;
+        order: number;
+        isGate: boolean;
+        isTrigger: boolean;
+        translations: string | null;
+        options: { create: Array<{ label: string; score: number; value: string | null; trigger: string | null; order: number; translations: string | null }> };
+      };
+    }> = [];
 
     let questionCount = 0;
     let optionCount = 0;
 
     for (const row of qRows) {
-      if (!row.dimCode || !row.text) continue;
+      if (!row.dimCode || !row.text) {
+        skippedRows.push(`Question row missing dimCode or text`);
+        continue;
+      }
 
       const qType = String(row.type || "regular");
       const isGate = qType === "gate";
       const isTrigger = qType === "trigger";
 
-      // Build translations for question text
       const qTranslations: Record<string, Record<string, string>> = {};
       for (const lang of LANGS) {
         const val = String(row[`text_${lang}`] ?? "").trim();
@@ -143,7 +200,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Build options
       const optionLetters = ["A", "B", "C", "D", "E"];
       const options: Array<{ label: string; score: number; value: string | null; trigger: string | null; order: number; translations: string | null }> = [];
 
@@ -162,17 +218,20 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        const optValue = String(row[`${letter}_value`] ?? "").trim() || null;
+        const optTrigger = String(row[`${letter}_trigger`] ?? "").trim() || null;
+
         options.push({
           label,
           score,
-          value: isGate ? String(row.value ?? row[letter] ?? "").trim() || null : null,
-          trigger: isTrigger ? String(row.trigger ?? row[letter] ?? "").trim() || null : null,
+          value: isGate ? optValue : null,
+          trigger: isTrigger ? optTrigger : null,
           order: oi,
           translations: Object.keys(optTranslations).length > 0 ? JSON.stringify(optTranslations) : null,
         });
       }
 
-      await prisma.question.create({
+      questionCreates.push({
         data: {
           dimCode: String(row.dimCode),
           text: String(row.text),
@@ -198,15 +257,29 @@ export async function POST(req: NextRequest) {
 
     // --- Parse Personality Types ---
     const pSheet = wb.Sheets["PersonalityTypes"];
+    const personalityCreates: Array<{
+      data: {
+        code: string;
+        name: string;
+        group: string;
+        vector: string;
+        slogan: string;
+        desc: string;
+        evaUnit: string | null;
+        emoji: string;
+        translations: string | null;
+      };
+    }> = [];
     let personalityCount = 0;
     if (pSheet) {
       const pRows = XLSX.utils.sheet_to_json<Record<string, string | number>>(pSheet);
-      await prisma.personalityType.deleteMany();
-
       for (const row of pRows) {
-        if (!row.code || !row.name || !row.vector) continue;
+        if (!row.code || !row.name || !row.vector) {
+          skippedRows.push(`PersonalityType row missing code/name/vector`);
+          continue;
+        }
         const t = buildTranslations(row, ["name", "slogan", "desc", "evaUnit"]);
-        await prisma.personalityType.create({
+        personalityCreates.push({
           data: {
             code: String(row.code),
             name: String(row.name),
@@ -225,15 +298,28 @@ export async function POST(req: NextRequest) {
 
     // --- Parse Special Types ---
     const sSheet = wb.Sheets["SpecialTypes"];
+    const specialCreates: Array<{
+      data: {
+        code: string;
+        name: string;
+        triggerType: string;
+        triggerCond: string;
+        slogan: string;
+        desc: string;
+        emoji: string;
+        translations: string | null;
+      };
+    }> = [];
     let specialCount = 0;
     if (sSheet) {
       const sRows = XLSX.utils.sheet_to_json<Record<string, string | number>>(sSheet);
-      await prisma.specialType.deleteMany();
-
       for (const row of sRows) {
-        if (!row.code || !row.name) continue;
+        if (!row.code || !row.name) {
+          skippedRows.push(`SpecialType row missing code/name`);
+          continue;
+        }
         const t = buildTranslations(row, ["name", "slogan", "desc"]);
-        await prisma.specialType.create({
+        specialCreates.push({
           data: {
             code: String(row.code),
             name: String(row.name),
@@ -249,9 +335,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Execute all operations in a transaction
+    await prisma.$transaction([
+      prisma.option.deleteMany(),
+      prisma.question.deleteMany(),
+      prisma.personalityType.deleteMany(),
+      prisma.specialType.deleteMany(),
+      ...questionCreates.map((q) => prisma.question.create(q)),
+      ...personalityCreates.map((p) => prisma.personalityType.create(p)),
+      ...specialCreates.map((s) => prisma.specialType.create(s)),
+    ]);
+
     return NextResponse.json({
       ok: true,
       imported: { questions: questionCount, options: optionCount, personalityTypes: personalityCount, specialTypes: specialCount },
+      skipped: skippedRows.length > 0 ? skippedRows : undefined,
     });
   } catch (e) {
     console.error("Import error:", e);

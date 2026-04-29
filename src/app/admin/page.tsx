@@ -784,7 +784,7 @@ function TypesPanel() {
 // ===== Excel 导入面板 =====
 function ImportPanel() {
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; imported?: Record<string, number>; error?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; imported?: Record<string, number>; skipped?: string[]; error?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async () => {
@@ -795,7 +795,9 @@ function ImportPanel() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/admin/import", { method: "POST", body: fd });
+      const isMd = file.name.endsWith(".md");
+      const apiEndpoint = isMd ? "/api/admin/export-md" : "/api/admin/import";
+      const res = await fetch(apiEndpoint, { method: "POST", body: fd });
       const data = await res.json();
       setResult(data);
     } catch {
@@ -807,32 +809,41 @@ function ImportPanel() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {/* Download template */}
+      {/* Export current data */}
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
-        <h3 className="nerv-label mb-4">STEP 1 — 下载模板</h3>
+        <h3 className="nerv-label mb-4">STEP 1 — 导出当前题库</h3>
         <p className="text-xs text-[#94a3b8] mb-4">
-          Excel 包含 3 个表：Questions（题目）、PersonalityTypes（人格）、SpecialTypes（特殊人格）。
+          导出包含 3 个表：Questions（题目）、PersonalityTypes（人格）、SpecialTypes（特殊人格）。
           中文列为基准列，<code className="text-[#4ade80]">_en</code> / <code className="text-[#4ade80]">_ja</code> / <code className="text-[#4ade80]">_ko</code> / <code className="text-[#4ade80]">_zh-TW</code> 为翻译列。
+          可在 Excel 中修改后上传导入。
         </p>
-        <a
-          href="/api/admin/import"
-          className="inline-block px-4 py-2 text-sm eva-text tracking-wider border border-[#7c3aed] text-[#7c3aed] hover:bg-[#7c3aed]/10 transition-colors cursor-pointer"
-        >
-          下载模板 Excel
-        </a>
+        <div className="flex gap-3">
+          <a
+            href="/api/admin/import"
+            className="inline-block px-4 py-2 text-sm eva-text tracking-wider border border-[#7c3aed] text-[#7c3aed] hover:bg-[#7c3aed]/10 transition-colors cursor-pointer"
+          >
+            导出 Excel
+          </a>
+          <a
+            href="/api/admin/export-md"
+            className="inline-block px-4 py-2 text-sm eva-text tracking-wider border border-[#64748b] text-[#64748b] hover:bg-[#64748b]/10 transition-colors cursor-pointer"
+          >
+            导出 Markdown
+          </a>
+        </div>
       </div>
 
       {/* Upload */}
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
-        <h3 className="nerv-label mb-4">STEP 2 — 上传填写好的 Excel</h3>
+        <h3 className="nerv-label mb-4">STEP 2 — 上传修改后的文件</h3>
         <p className="text-xs text-[#f97316] mb-4">
-          ⚠ 上传会清空并替换所有题目和人格数据，请确保 Excel 内容完整。
+          ⚠ 上传会清空并替换所有题目和人格数据，请确保文件内容完整。
         </p>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-4">
           <input
             ref={fileRef}
             type="file"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.md"
             className="text-sm text-[#94a3b8] file:mr-4 file:py-2 file:px-4 file:border file:border-[#333] file:bg-[#1e1b2e] file:text-[#94a3b8] file:text-xs file:eva-text file:cursor-pointer file:transition-colors hover:file:border-[#7c3aed] hover:file:text-[#7c3aed]"
           />
           <button
@@ -843,6 +854,7 @@ function ImportPanel() {
             {uploading ? "导入中..." : "开始导入"}
           </button>
         </div>
+        <p className="text-[10px] text-[#64748b]">支持格式: .xlsx (Excel) / .md (Markdown)</p>
 
         {result && (
           <div className={`mt-4 p-3 rounded border text-xs eva-text ${
@@ -852,6 +864,15 @@ function ImportPanel() {
               <div>
                 <p className="font-bold mb-1">导入成功</p>
                 <p>题目: {result.imported?.questions} | 选项: {result.imported?.options} | 人格: {result.imported?.personalityTypes} | 特殊: {result.imported?.specialTypes}</p>
+                {result.skipped && result.skipped.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-[#4ade80]/20">
+                    <p className="text-[#f97316]">⚠ 跳过 {result.skipped.length} 行:</p>
+                    <ul className="mt-1 ml-2 list-disc list-inside text-[#94a3b8]">
+                      {result.skipped.slice(0, 5).map((s, i) => <li key={i}>{s}</li>)}
+                      {result.skipped.length > 5 && <li>...还有 {result.skipped.length - 5} 行</li>}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <p>{result.error}</p>
@@ -866,9 +887,9 @@ function ImportPanel() {
         <div className="text-[10px] text-[#64748b] space-y-1 leading-relaxed eva-text">
           <p><code className="text-[#94a3b8]">dimCode</code> 维度代码（A1~E3 或 GATE/TRIGGER）</p>
           <p><code className="text-[#94a3b8]">order</code> 排序序号 · <code className="text-[#94a3b8]">type</code> regular/gate/trigger</p>
-          <p><code className="text-[#94a3b8]">value</code> 门控题路径值 · <code className="text-[#94a3b8]">trigger</code> 触发题代码</p>
           <p><code className="text-[#94a3b8]">text</code> 中文题目 · <code className="text-[#94a3b8]">text_en/ja/ko/zh-TW</code> 翻译</p>
           <p><code className="text-[#94a3b8]">A~E</code> 中文选项 · <code className="text-[#94a3b8]">A_en</code> 英文选项 · <code className="text-[#94a3b8]">A_score</code> 分值</p>
+          <p><code className="text-[#94a3b8]">A_value</code> 门控题路径值 · <code className="text-[#94a3b8]">A_trigger</code> 触发题代码（仅 gate/trigger 类型）</p>
         </div>
       </div>
     </motion.div>

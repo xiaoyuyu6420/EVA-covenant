@@ -39,7 +39,8 @@ const zhCN: Record<string, string> = {
   "result.restart": "重新测试",
   "result.share": "生成档案分享",
   "result.shareLoading": "生成中...",
-  "result.shareText": "我的EVA适配结果是 {0}（同步率{1}%）",
+  "result.shareText": "我的EVA适配是{0}，同步率{1}%。你是什么机型？→ {2}",
+  "result.shareShort": "我的EVA适配是{0}，同步率{1}%。你是什么机型？",
   "result.copied": "已复制到剪贴板！",
 };
 
@@ -75,7 +76,8 @@ const zhTW: Record<string, string> = {
   "result.restart": "重新測試",
   "result.share": "生成檔案分享",
   "result.shareLoading": "生成中...",
-  "result.shareText": "我的EVA適配結果是 {0}（同步率{1}%）",
+  "result.shareText": "我的EVA適配是{0}，同步率{1}%。你是什麼機型？→ {2}",
+  "result.shareShort": "我的EVA適配是{0}，同步率{1}%。你是什麼機型？",
   "result.copied": "已複製到剪貼簿！",
 };
 
@@ -111,7 +113,8 @@ const en: Record<string, string> = {
   "result.restart": "RETEST",
   "result.share": "SHARE RESULT",
   "result.shareLoading": "Generating...",
-  "result.shareText": "My EVA result is {0} (Sync Rate {1}%)",
+  "result.shareText": "My EVA is {0}, sync rate {1}%. What's your unit? → {2}",
+  "result.shareShort": "My EVA is {0}, sync rate {1}%. What's your unit?",
   "result.copied": "Copied to clipboard!",
 };
 
@@ -147,7 +150,8 @@ const ja: Record<string, string> = {
   "result.restart": "再テスト",
   "result.share": "結果を共有",
   "result.shareLoading": "生成中...",
-  "result.shareText": "私のEVA結果は {0}（シンクロ率{1}%）",
+  "result.shareText": "私のEVAは{0}、シンクロ率{1}%。あなたはどの機体？→ {2}",
+  "result.shareShort": "私のEVAは{0}、シンクロ率{1}%。あなたはどの機体？",
   "result.copied": "クリップボードにコピーしました！",
 };
 
@@ -183,7 +187,8 @@ const ko: Record<string, string> = {
   "result.restart": "재테스트",
   "result.share": "결과 공유",
   "result.shareLoading": "생성 중...",
-  "result.shareText": "나의 EVA 결과는 {0} (동기화율 {1}%)",
+  "result.shareText": "나의 EVA는 {0}, 동기화율 {1}%. 너는 어떤 기체? → {2}",
+  "result.shareShort": "나의 EVA는 {0}, 동기화율 {1}%. 너는 어떤 기체?",
   "result.copied": "클립보드에 복사되었습니다!",
 };
 

@@ -66,14 +66,17 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${notoSerif.variable} ${shareTechMono.variable} ${teko.variable} h-full antialiased`}
+      className={`${notoSerif.variable} ${shareTechMono.variable} ${teko.variable} h-dvh antialiased`}
       suppressHydrationWarning
     >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#0a0a0a" />
       </head>
-      <body className="min-h-screen">
+      <body className="min-h-dvh overscroll-none bg-[#0a0a0a]">
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>

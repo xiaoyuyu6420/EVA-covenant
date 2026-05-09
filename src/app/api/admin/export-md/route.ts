@@ -164,40 +164,34 @@ export async function POST(req: NextRequest) {
 
     const skippedRows: string[] = [];
     const questionCreates: Array<{
-      data: {
-        dimCode: string;
-        text: string;
-        order: number;
-        isGate: boolean;
-        isTrigger: boolean;
-        translations: string | null;
-        options: { create: Array<{ label: string; score: number; value: string | null; trigger: string | null; order: number; translations: string | null }> };
-      };
+      dimCode: string;
+      text: string;
+      order: number;
+      isGate: boolean;
+      isTrigger: boolean;
+      translations: string | null;
+      options: { create: Array<{ label: string; score: number; value: string | null; trigger: string | null; order: number; translations: string | null }> };
     }> = [];
     const personalityCreates: Array<{
-      data: {
-        code: string;
-        name: string;
-        group: string;
-        vector: string;
-        slogan: string;
-        desc: string;
-        evaUnit: string | null;
-        emoji: string;
-        translations: string | null;
-      };
+      code: string;
+      name: string;
+      group: string;
+      vector: string;
+      slogan: string;
+      desc: string;
+      evaUnit: string | null;
+      emoji: string;
+      translations: string | null;
     }> = [];
     const specialCreates: Array<{
-      data: {
-        code: string;
-        name: string;
-        triggerType: string;
-        triggerCond: string;
-        slogan: string;
-        desc: string;
-        emoji: string;
-        translations: string | null;
-      };
+      code: string;
+      name: string;
+      triggerType: string;
+      triggerCond: string;
+      slogan: string;
+      desc: string;
+      emoji: string;
+      translations: string | null;
     }> = [];
 
     let section: "questions" | "personalities" | "specials" | null = null;
@@ -259,16 +253,16 @@ export async function POST(req: NextRequest) {
       prisma.question.deleteMany(),
       prisma.personalityType.deleteMany(),
       prisma.specialType.deleteMany(),
-      ...questionCreates.map((q) => prisma.question.create(q)),
-      ...personalityCreates.map((p) => prisma.personalityType.create(p)),
-      ...specialCreates.map((s) => prisma.specialType.create(s)),
+      ...questionCreates.map((q) => prisma.question.create({ data: q })),
+      ...personalityCreates.map((p) => prisma.personalityType.create({ data: p })),
+      ...specialCreates.map((s) => prisma.specialType.create({ data: s })),
     ]);
 
     return NextResponse.json({
       ok: true,
       imported: {
         questions: questionCreates.length,
-        options: questionCreates.reduce((sum, q) => sum + q.data.options.create.length, 0),
+        options: questionCreates.reduce((sum, q) => sum + q.options.create.length, 0),
         personalityTypes: personalityCreates.length,
         specialTypes: specialCreates.length,
       },

@@ -4,7 +4,6 @@ import { forwardRef } from "react";
 import type { MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { personalityTypes, groups } from "@/lib/quiz-data";
-import type { Lang } from "@/lib/i18n/context";
 
 interface Props {
   top: MatchResult;
@@ -30,9 +29,12 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ top, userScores, theme },
         background: "linear-gradient(135deg, #0a0a0a 0%, #111 100%)",
         color: "#fff",
         fontFamily: "system-ui, sans-serif",
-        position: "absolute",
-        left: "-9999px",
+        position: "fixed",
+        left: 0,
         top: 0,
+        zIndex: -1,
+        opacity: 0,
+        pointerEvents: "none",
       }}
     >
       {/* Header */}

@@ -17,7 +17,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3004
+ENV PORT=3002
 ENV HOSTNAME="0.0.0.0"
 
 RUN apk add --no-cache openssl
@@ -54,6 +54,6 @@ exec node server.js
 EOF
 RUN chmod +x /app/entrypoint.sh
 
-EXPOSE 3004
+EXPOSE 3002
 
 ENTRYPOINT ["/app/entrypoint.sh"]

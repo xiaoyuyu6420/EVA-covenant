@@ -5,7 +5,7 @@
 # 前置条件:
 #   - Ubuntu 20.04+ / Debian 11+ / CentOS 8+
 #   - 有 root 或 sudo 权限
-#   - 开放了 80/443/3004 端口
+#   - 开放了 80/443/3002 端口
 
 set -e
 
@@ -56,7 +56,7 @@ ADMIN_PASSWORD=你的管理员密码
 # JWT 密钥（必改）
 ADMIN_SECRET=换一个随机字符串
 # 端口
-PORT=3004
+PORT=3002
 ENVEOF
   echo "已创建 .env，请编辑 $DEPLOY_DIR/.env 修改密码！"
 fi
@@ -67,8 +67,8 @@ docker compose up -d --build
 
 echo ""
 echo "=== 部署完成! ==="
-echo "访问: http://你的服务器IP:3004"
-echo "后台: http://你的服务器IP:3004/admin"
+echo "访问: http://你的服务器IP:3002"
+echo "后台: http://你的服务器IP:3002/admin"
 echo ""
 echo "下一步:"
 echo "  1. 编辑 .env 修改管理员密码"

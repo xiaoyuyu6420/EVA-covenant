@@ -245,12 +245,12 @@ export const questions: QuizQuestion[] = [
 
 // ===== 门控题（约2/3处，第20题附近插入） =====
 export const gateQuestion: GateQuestion = {
-  text: "插入栓深处，你感知到两种可能性同时涌来。一种是所有灵魂融为一体——温暖、拥挤、永恒。另一种是某种更古老的力量在觉醒——你感觉自己正在超越人类的极限。你的本能反应是？",
+  text: "插入栓深处，你感知到多种可能性同时涌来。一种是所有灵魂融为一体——温暖、拥挤、永恒。另一种是某种更古老的力量在觉醒。还有一种……你听到了某个人在呼唤你的名字。你的本能反应是？",
   options: [
     { label: "不想让这种温暖消失——所有灵魂本就是一体的", value: "complement" },
     { label: "那种超越一切的力量……你想握住它", value: "transcend" },
+    { label: "那个声音……你想找到呼唤你的人", value: "rei" },
     { label: "立刻收缩AT力场，把这些异象全部挡在外面", value: "normal" },
-    { label: "向MAGI报告异常，冷静分析信号来源", value: "normal" },
     { label: "深呼吸，把注意力拉回作战——这些幻觉无关紧要", value: "normal" },
   ],
 };
@@ -270,6 +270,15 @@ export const unit13TriggerQuestion: TriggerQuestion = {
   options: [
     { label: "愿意。这具机体本就是为超越而造——我要跨越那个界限", trigger: "U13G" },
     { label: "不。两个灵魂不该共用一个身体——我会守住人类的底线", trigger: undefined },
+  ],
+};
+
+// ===== 触发题：绫波路线 =====
+export const reiTriggerQuestion: TriggerQuestion = {
+  text: "呼唤你的声音渐渐清晰——那是零号机核心中沉睡的灵魂。她告诉你：「我可以给你一切你缺少的东西——温暖、存在感、被需要的证明。代价是……你的心将不再只属于你自己。」你愿意接受吗？",
+  options: [
+    { label: "愿意。如果被需要意味着交出部分自我——那是值得的代价", trigger: "REI0" },
+    { label: "不。即使孤独，我的心只能是我自己的", trigger: undefined },
   ],
 };
 
@@ -432,6 +441,13 @@ export const specialTypes: SpecialType[] = [
     triggerCond: "最佳匹配相似度低于阈值，无法归入任何EVA机体适配类型",
     slogan: "不属于任何机体——你就是起源",
     desc: "MAGI无法将你的灵魂结构归入任何已知适格者档案。你既不属于初号机的暴走，也不属于贰号机的战斗，不属于零号机的牺牲，也不属于Mark.06的超验。你存在于一切分类之外——就像亚当，一切使徒的始祖。第一使徒从不驾驶EVA。它只被等待——在Terminal Dogma最深处的十字架上，在一切开始与终结的地方。",
+  },
+  {
+    code: "REI0", name: "零号共鸣", emoji: "🌊",
+    triggerType: "gate+trigger",
+    triggerCond: "门控题选「想找到呼唤你的人」+ 触发题选「愿意接受沉睡灵魂的契约」",
+    slogan: "你找到了她——零号机核心中的灵魂",
+    desc: "你在插入栓深处听到了那个声音——零号机核心中沉睡的灵魂在呼唤你。她不是数据，不是程序，是真实存在过的意识残留。你选择了回应她，接受了她的温暖和存在感，代价是将部分自我交出。这不是补完——不是所有人的融合，只是两个人的共振。零号机的容器里终于不再只有一个孤独的灵魂。",
   },
 ];
 

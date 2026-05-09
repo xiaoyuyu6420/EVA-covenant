@@ -327,8 +327,8 @@ describe("quiz-data: 数据完整性验证", () => {
     expect(personalityTypes).toHaveLength(22);
   });
 
-  it("3个特殊人格类型", () => {
-    expect(specialTypes).toHaveLength(3);
+  it("4个特殊人格类型", () => {
+    expect(specialTypes).toHaveLength(4);
   });
 
   it("每个常规类型的向量解析后恰好15个分档值", () => {

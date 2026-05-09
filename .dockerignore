@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Next.js build output
+.next
+
+# Testing
+coverage
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+!README.md
+
+# Prisma (keep schema, ignore DB)
+prisma/*.db
+prisma/*.db-journal
+
+# Misc
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

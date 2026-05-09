@@ -12,6 +12,7 @@ interface Props {
 export default function WelcomeScreen({ onStart }: Props) {
   const [bootPhase, setBootPhase] = useState(0);
   const [pilotCount, setPilotCount] = useState<number | null>(null);
+  const [showFSModal, setShowFSModal] = useState(false);
   const t = useT();
 
   useEffect(() => {
@@ -23,6 +24,15 @@ export default function WelcomeScreen({ onStart }: Props) {
   }, []);
 
   useEffect(() => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
+    if (isMobile && !isStandalone && !document.fullscreenElement) {
+      const timer = setTimeout(() => setShowFSModal(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
     fetch("/api/stats")
       .then((r) => r.json())
       .then((d) => { if (d.total) setPilotCount(d.total); })
@@ -30,10 +40,10 @@ export default function WelcomeScreen({ onStart }: Props) {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col px-5 py-7">
+    <div className="flex-1 flex flex-col px-5 py-4">
       {/* Header */}
       <motion.div
-        className="flex justify-between items-center pb-1.5 mb-5 border-b border-[#333] text-[var(--nerv-orange)] text-[0.8rem] tracking-[2px] uppercase"
+        className="flex justify-between items-center pb-1.5 mb-4 border-b border-[#333] text-[var(--nerv-orange)] text-[0.8rem] tracking-[2px] uppercase"
         style={{ fontFamily: "var(--font-tech)" }}
         initial={{ opacity: 0 }}
         animate={bootPhase >= 1 ? { opacity: 1 } : {}}
@@ -42,13 +52,26 @@ export default function WelcomeScreen({ onStart }: Props) {
         <span>{t("welcome.header")}</span>
         <div className="flex items-center gap-3">
           <LangSelector />
-          <span>SYSTEM READY</span>
+          <button
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                const el = document.documentElement;
+                const req = el.requestFullscreen || (el as any).webkitRequestFullscreen;
+                if (req) req.call(el).catch(() => {});
+              }
+            }}
+            className="text-[0.75rem] text-[#555] hover:text-[var(--nerv-orange)] transition-colors cursor-pointer"
+            title="Fullscreen"
+          >
+            ⛶
+          </button>
+          <span>READY</span>
         </div>
       </motion.div>
 
       {/* Title */}
       <motion.div
-        className="my-10 text-center"
+        className="my-6 text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={bootPhase >= 2 ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8 }}
@@ -71,7 +94,7 @@ export default function WelcomeScreen({ onStart }: Props) {
 
       {/* Description */}
       <motion.div
-        className="border-l-[3px] border-[var(--nerv-red)] pl-4 mb-10"
+        className="border-l-[3px] border-[var(--nerv-red)] pl-4 mb-6"
         style={{ fontFamily: "var(--font-title)" }}
         initial={{ opacity: 0, x: -10 }}
         animate={bootPhase >= 3 ? { opacity: 1, x: 0 } : {}}
@@ -87,7 +110,7 @@ export default function WelcomeScreen({ onStart }: Props) {
       {/* Pilot count — EVA themed */}
       {pilotCount !== null && pilotCount > 0 && (
         <motion.div
-          className="mb-8 flex items-center justify-center gap-3"
+          className="mb-6 flex items-center justify-center gap-3"
           initial={{ opacity: 0 }}
           animate={bootPhase >= 3 ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -109,7 +132,7 @@ export default function WelcomeScreen({ onStart }: Props) {
 
       {/* Status box */}
       <motion.div
-        className="border border-dashed border-[var(--eva-green)] bg-[rgba(82,255,0,0.05)] p-4 mb-10 text-[0.85rem]"
+        className="border border-dashed border-[var(--eva-green)] bg-[rgba(82,255,0,0.05)] p-3 mb-6 text-[0.85rem]"
         style={{ color: "var(--eva-green)", fontFamily: "var(--font-tech)" }}
         initial={{ opacity: 0 }}
         animate={bootPhase >= 4 ? { opacity: 1 } : {}}
@@ -146,6 +169,50 @@ export default function WelcomeScreen({ onStart }: Props) {
       >
         CLASSIFIED — NERV-HQ-2024
       </motion.p>
+
+      {/* Fullscreen modal — first visit on mobile */}
+      {showFSModal && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          onClick={() => { setShowFSModal(false); }}
+        >
+          <motion.div
+            className="mx-6 border border-[var(--nerv-orange)] bg-[#111] p-6 max-w-[340px] w-full"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.05 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ fontFamily: "var(--font-tech)" }}
+          >
+            <p className="text-[0.7rem] text-[var(--nerv-orange)] tracking-[2px] mb-3">⚠ NERV SYSTEM NOTICE</p>
+            <p className="text-[0.95rem] text-[#ccc] leading-[1.7] mb-5" style={{ fontFamily: "var(--font-title)" }}>
+              建议进入全屏模式以获得最佳适格者检测体验。地址栏会遮挡关键操作区域。
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const el = document.documentElement;
+                  const req = el.requestFullscreen || (el as any).webkitRequestFullscreen;
+                  if (req) req.call(el).catch(() => {});
+                  setShowFSModal(false);
+                }}
+                className="flex-1 py-2.5 text-center text-[0.85rem] font-bold tracking-[2px] cursor-pointer border border-[var(--eva-green)] text-[var(--eva-green)] bg-transparent uppercase transition-colors eva-btn"
+              >
+                <span className="relative z-10">进入全屏</span>
+              </button>
+              <button
+                onClick={() => { setShowFSModal(false); }}
+                className="flex-1 py-2.5 text-center text-[0.85rem] tracking-[1px] cursor-pointer border border-[#444] text-[#666] bg-transparent uppercase transition-colors"
+              >
+                跳过
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

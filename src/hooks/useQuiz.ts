@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { matchPersonality, type MatchInput } from "@/lib/match-engine";
+import { matchPersonality, scoresToGrades, type MatchInput } from "@/lib/match-engine";
 import { loadProgress, saveProgress, clearProgress, saveResult } from "@/lib/storage";
-import type { FullResult } from "@/lib/types";
+import type { FullResult, Grade } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { useI18n } from "@/lib/i18n/context";
 
@@ -45,7 +45,7 @@ interface ApiData {
   }>;
 }
 
-type TriggerKind = "none" | "cmpl" | "unit13";
+type TriggerKind = "none" | "cmpl" | "unit13" | "rei";
 
 function buildQuestionList(
   apiData: ApiData,
@@ -100,6 +100,16 @@ function buildQuestionList(
         trigger: o.trigger ?? undefined,
       })),
     });
+  } else if (triggerKind === "rei" && apiData.triggerQuestions[2]) {
+    const tq = apiData.triggerQuestions[2];
+    list.push({
+      type: "trigger",
+      text: tq.text,
+      options: tq.options.map((o) => ({
+        label: o.label,
+        trigger: o.trigger ?? undefined,
+      })),
+    });
   }
 
   return list;
@@ -113,6 +123,7 @@ export function useQuiz() {
   const [gateValue, setGateValue] = useState<string | undefined>();
   const [triggerValue, setTriggerValue] = useState<string | undefined>();
   const [result, setResult] = useState<FullResult | null>(null);
+  const [preGrades, setPreGrades] = useState<Grade[] | null>(null);
   const initialized = useRef(false);
   const answerLog = useRef<Array<{ dim: string; text: string; label: string; score: number }>>([]);
 
@@ -150,7 +161,8 @@ export function useQuiz() {
           if (saved.answerLog) answerLog.current = saved.answerLog;
           const triggerKind: TriggerKind =
             saved.gateAnswer === "complement" && !saved.triggerAnswer ? "cmpl" :
-            saved.gateAnswer === "transcend" && !saved.triggerAnswer ? "unit13" : "none";
+            saved.gateAnswer === "transcend" && !saved.triggerAnswer ? "unit13" :
+            saved.gateAnswer === "rei" && !saved.triggerAnswer ? "rei" : "none";
           setQList(buildQuestionList(data, triggerKind));
           setScreen("test");
         } else {
@@ -175,6 +187,7 @@ export function useQuiz() {
     setGateValue(undefined);
     setTriggerValue(undefined);
     setResult(null);
+    setPreGrades(null);
     setQList(buildQuestionList(apiData, "none"));
     answerLog.current = [];
   }, [apiData]);
@@ -205,6 +218,8 @@ export function useQuiz() {
         newList = buildQuestionList(apiData, "cmpl");
       } else if (opt.value === "transcend") {
         newList = buildQuestionList(apiData, "unit13");
+      } else if (opt.value === "rei") {
+        newList = buildQuestionList(apiData, "rei");
       }
     } else if (q.type === "trigger") {
       newTrigger = opt.trigger;
@@ -215,6 +230,7 @@ export function useQuiz() {
     if (nextQ >= newList.length) {
       setScreen("calculating");
       const finalScores = newScores;
+      setPreGrades(scoresToGrades(newScores));
       const logCopy = [...answerLog.current];
       const matchInput: MatchInput = {
         personalityTypes: apiData.personalityTypes,
@@ -268,12 +284,15 @@ export function useQuiz() {
     setGateValue(undefined);
     setTriggerValue(undefined);
     setResult(null);
+    setPreGrades(null);
     setQList(buildQuestionList(apiData, "none"));
     answerLog.current = [];
   }, [apiData]);
 
+  const userGrades = result?.userVector ?? preGrades ?? null;
+
   return {
     screen, currentQ, progress, totalQ, qList, result,
-    startTest, handleAnswer, restart, dimScores,
+    startTest, handleAnswer, restart, dimScores, userGrades,
   };
 }

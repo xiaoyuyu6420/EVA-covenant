@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { questions, gateQuestion, triggerQuestion, personalityTypes, specialTypes } from "../src/lib/quiz-data";
+import { questions, gateQuestion, triggerQuestion, unit13TriggerQuestion, reiTriggerQuestion, personalityTypes, specialTypes } from "../src/lib/quiz-data";
 
 const prisma = new PrismaClient();
 
@@ -70,6 +70,42 @@ async function seed() {
     },
   });
 
+  // 插入触发题：十三号机
+  await prisma.question.create({
+    data: {
+      dimCode: "TRIGGER_U13",
+      text: unit13TriggerQuestion.text,
+      order: 998,
+      isTrigger: true,
+      options: {
+        create: unit13TriggerQuestion.options.map((opt, j) => ({
+          label: opt.label,
+          score: 0,
+          trigger: opt.trigger,
+          order: j,
+        })),
+      },
+    },
+  });
+
+  // 插入触发题：绫波路线
+  await prisma.question.create({
+    data: {
+      dimCode: "TRIGGER_REI",
+      text: reiTriggerQuestion.text,
+      order: 997,
+      isTrigger: true,
+      options: {
+        create: reiTriggerQuestion.options.map((opt, j) => ({
+          label: opt.label,
+          score: 0,
+          trigger: opt.trigger,
+          order: j,
+        })),
+      },
+    },
+  });
+
   // 插入人格类型
   for (const pt of personalityTypes) {
     await prisma.personalityType.create({
@@ -102,7 +138,7 @@ async function seed() {
   }
 
   console.log("Seed completed!");
-  console.log(`  Questions: ${questions.length + 2}`);
+  console.log(`  Questions: ${questions.length + 4}`);
   console.log(`  Personality Types: ${personalityTypes.length}`);
   console.log(`  Special Types: ${specialTypes.length}`);
 }

@@ -16,6 +16,33 @@ function parseRelayDepth(value: unknown) {
   return Math.min(Math.trunc(depth), 99);
 }
 
+function getMetaString(meta: Record<string, unknown>, key: string) {
+  const value = meta[key];
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : null;
+}
+
+function incrementShareStat(
+  map: Map<string, { clicks: number; successes: number }>,
+  key: string,
+  event: string,
+) {
+  const stat = map.get(key) ?? { clicks: 0, successes: 0 };
+  if (event === "share_click") stat.clicks++;
+  if (event === "share_success") stat.successes++;
+  map.set(key, stat);
+}
+
+function toShareStatRows(map: Map<string, { clicks: number; successes: number }>) {
+  return Array.from(map.entries())
+    .map(([key, value]) => ({
+      key,
+      clicks: value.clicks,
+      successes: value.successes,
+      successRate: value.clicks > 0 ? Math.round((value.successes / value.clicks) * 1000) / 10 : null,
+    }))
+    .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks);
+}
+
 export async function GET() {
   // 来源渠道统计
   const utmStats = await prisma.testRecord.groupBy({
@@ -88,6 +115,43 @@ export async function GET() {
     relayDepthMap.set(depth, (relayDepthMap.get(depth) ?? 0) + 1);
   }
 
+  const shareEvents = await prisma.eventLog.findMany({
+    take: 1000,
+    orderBy: { createdAt: "desc" },
+    where: { event: { in: ["share_click", "share_success"] } },
+    select: {
+      event: true,
+      meta: true,
+    },
+  });
+
+  const shareChannelMap = new Map<string, { clicks: number; successes: number }>();
+  const inviteTargetMap = new Map<string, { label: string; clicks: number; successes: number }>();
+  const relayRelationMap = new Map<string, { clicks: number; successes: number }>();
+
+  for (const event of shareEvents) {
+    const meta = parseMeta(event.meta);
+    const channel = getMetaString(meta, "channel") ?? "unknown";
+    incrementShareStat(shareChannelMap, channel, event.event);
+
+    const inviteTarget = getMetaString(meta, "inviteTarget");
+    if (inviteTarget) {
+      const current = inviteTargetMap.get(inviteTarget) ?? {
+        label: getMetaString(meta, "inviteLabel") ?? inviteTarget,
+        clicks: 0,
+        successes: 0,
+      };
+      if (event.event === "share_click") current.clicks++;
+      if (event.event === "share_success") current.successes++;
+      inviteTargetMap.set(inviteTarget, current);
+    }
+
+    const relayRelation = getMetaString(meta, "relayRelation");
+    if (relayRelation) {
+      incrementShareStat(relayRelationMap, relayRelation, event.event);
+    }
+  }
+
   // 最近记录
   const recentRecords = await prisma.testRecord.findMany({
     take: 20,
@@ -115,6 +179,27 @@ export async function GET() {
     relayDepthStats: Array.from(relayDepthMap.entries())
       .sort(([a], [b]) => a - b)
       .map(([depth, count]) => ({ depth, count })),
+    shareChannelStats: toShareStatRows(shareChannelMap).map((item) => ({
+      channel: item.key,
+      clicks: item.clicks,
+      successes: item.successes,
+      successRate: item.successRate,
+    })),
+    inviteTargetStats: Array.from(inviteTargetMap.entries())
+      .map(([target, value]) => ({
+        target,
+        label: value.label,
+        clicks: value.clicks,
+        successes: value.successes,
+        successRate: value.clicks > 0 ? Math.round((value.successes / value.clicks) * 1000) / 10 : null,
+      }))
+      .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks),
+    relayRelationStats: toShareStatRows(relayRelationMap).map((item) => ({
+      relation: item.key,
+      clicks: item.clicks,
+      successes: item.successes,
+      successRate: item.successRate,
+    })),
     recentEvents: recentEvents.map((e) => {
       const meta = parseMeta(e.meta);
       return {
@@ -127,6 +212,9 @@ export async function GET() {
         unit: typeof meta.unit === "string" ? meta.unit : null,
         channel: typeof meta.channel === "string" ? meta.channel : null,
         formationCode: typeof meta.formationCode === "string" ? meta.formationCode : null,
+        inviteTarget: typeof meta.inviteTarget === "string" ? meta.inviteTarget : null,
+        inviteLabel: typeof meta.inviteLabel === "string" ? meta.inviteLabel : null,
+        relayRelation: typeof meta.relayRelation === "string" ? meta.relayRelation : null,
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
         relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
         relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,

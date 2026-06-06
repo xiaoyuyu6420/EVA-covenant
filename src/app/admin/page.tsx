@@ -73,11 +73,15 @@ interface Analytics {
   eventCounts: { event: string; count: number }[];
   eventUtmStats: { source: string | null; event: string; count: number }[];
   relayDepthStats: { depth: number; count: number }[];
+  shareChannelStats: { channel: string; clicks: number; successes: number; successRate: number | null }[];
+  inviteTargetStats: { target: string; label: string; clicks: number; successes: number; successRate: number | null }[];
+  relayRelationStats: { relation: string; clicks: number; successes: number; successRate: number | null }[];
   recentEvents: {
     id: number; event: string; page: string | null;
     utmSource: string | null; sessionId: string | null;
     code: string | null; unit: string | null; channel: string | null;
     formationCode: string | null; shareBy: string | null;
+    inviteTarget: string | null; inviteLabel: string | null; relayRelation: string | null;
     relayFrom: string | null; relayRoot: string | null;
     relayDepth: number | null; nextRelayDepth: number | null;
     createdAt: string;
@@ -102,6 +106,24 @@ const FUNNEL_EVENTS = ["page_view", "relay_entry", "quiz_start", "quiz_complete"
 
 function sourceLabel(source: string | null) {
   return source ?? "直接";
+}
+
+function channelLabel(channel: string | null) {
+  const labels: Record<string, string> = {
+    native: "系统分享",
+    copy: "复制结果",
+    fallback: "复制兜底",
+    invite_copy: "默认邀请",
+    target_invite_copy: "定向邀请",
+    return_copy: "回传上游",
+    history_copy: "历史再发",
+    unknown: "未知",
+  };
+  return channel ? labels[channel] ?? channel : "—";
+}
+
+function rateLabel(rate: number | null) {
+  return rate === null ? "—" : `${rate}%`;
 }
 
 interface QuestionRow {
@@ -262,6 +284,9 @@ function RecordsPanel() {
   const maxUtmCount = Math.max(...data.utmStats.map((item) => item.count), 1);
   const maxEventUtmCount = Math.max(...data.eventUtmStats.map((item) => item.count), 1);
   const maxRelayDepthCount = Math.max(...data.relayDepthStats.map((item) => item.count), 1);
+  const maxShareChannelClicks = Math.max(...data.shareChannelStats.map((item) => item.clicks), 1);
+  const maxInviteTargetClicks = Math.max(...data.inviteTargetStats.map((item) => item.clicks), 1);
+  const maxRelayRelationClicks = Math.max(...data.relayRelationStats.map((item) => item.clicks), 1);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -366,6 +391,83 @@ function RecordsPanel() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">SHARE CHANNEL — 分享动作</h3>
+          <div className="space-y-2">
+            {data.shareChannelStats.map((item) => (
+              <div key={item.channel} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs eva-text text-[#94a3b8] truncate">{channelLabel(item.channel)}</span>
+                  <span className="text-xs eva-text text-[#4ade80]">
+                    {item.successes}/{item.clicks} · {rateLabel(item.successRate)}
+                  </span>
+                </div>
+                <div className="h-4 bg-[#1e1b2e] rounded overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#7c3aed] to-[#4ade80] rounded"
+                    style={{ width: `${Math.max((item.clicks / maxShareChannelClicks) * 100, item.clicks > 0 ? 5 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {data.shareChannelStats.length === 0 && (
+              <p className="text-[#64748b] text-sm text-center py-4">暂无分享动作数据</p>
+            )}
+          </div>
+        </div>
+
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">TARGET INVITES — 定向邀请</h3>
+          <div className="space-y-2">
+            {data.inviteTargetStats.map((item) => (
+              <div key={item.target} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs eva-text text-[#94a3b8] truncate">{item.label}</span>
+                  <span className="text-xs eva-text text-[#4ade80]">
+                    {item.successes}/{item.clicks} · {rateLabel(item.successRate)}
+                  </span>
+                </div>
+                <div className="h-4 bg-[#1e1b2e] rounded overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#f97316] to-[#4ade80] rounded"
+                    style={{ width: `${Math.max((item.clicks / maxInviteTargetClicks) * 100, item.clicks > 0 ? 5 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {data.inviteTargetStats.length === 0 && (
+              <p className="text-[#64748b] text-sm text-center py-4">暂无定向邀请数据</p>
+            )}
+          </div>
+        </div>
+
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">RELAY RELATION — 编队关系</h3>
+          <div className="space-y-2">
+            {data.relayRelationStats.map((item) => (
+              <div key={item.relation} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs eva-text text-[#94a3b8] truncate">{item.relation}</span>
+                  <span className="text-xs eva-text text-[#4ade80]">
+                    {item.successes}/{item.clicks} · {rateLabel(item.successRate)}
+                  </span>
+                </div>
+                <div className="h-4 bg-[#1e1b2e] rounded overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#38bdf8] to-[#4ade80] rounded"
+                    style={{ width: `${Math.max((item.clicks / maxRelayRelationClicks) * 100, item.clicks > 0 ? 5 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {data.relayRelationStats.length === 0 && (
+              <p className="text-[#64748b] text-sm text-center py-4">暂无编队关系数据</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
         <h3 className="nerv-label mb-4">RECENT SHARE EVENTS — 最近传播事件</h3>
         <div className="overflow-x-auto">
@@ -386,7 +488,14 @@ function RecordsPanel() {
                 <tr key={event.id} className="border-b border-[#1e1b2e] hover:bg-[#1e1b2e]/50">
                   <td className="py-2 px-3 text-[#e2e8f0]">{EVENT_LABELS[event.event] ?? event.event}</td>
                   <td className="py-2 px-3 text-[#94a3b8]">{event.unit ?? event.code ?? "—"}</td>
-                  <td className="py-2 px-3 eva-text text-[#64748b]">{event.channel ?? "—"}</td>
+                  <td className="py-2 px-3 eva-text text-[#64748b]">
+                    {channelLabel(event.channel)}
+                    {(event.inviteLabel || event.relayRelation) && (
+                      <span className="block text-[10px] text-[#4ade80]">
+                        {event.inviteLabel ?? event.relayRelation}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 px-3 eva-text text-[#4ade80]">
                     <span>{event.formationCode ?? event.shareBy ?? "—"}</span>
                     {(event.relayFrom || event.relayRoot) && (

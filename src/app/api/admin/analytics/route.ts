@@ -10,6 +10,12 @@ function parseMeta(raw: string | null) {
   }
 }
 
+function parseRelayDepth(value: unknown) {
+  const depth = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(depth) || depth < 1) return null;
+  return Math.min(Math.trunc(depth), 99);
+}
+
 export async function GET() {
   // 来源渠道统计
   const utmStats = await prisma.testRecord.groupBy({
@@ -63,6 +69,25 @@ export async function GET() {
     },
   });
 
+  const relayDepthEvents = await prisma.eventLog.findMany({
+    take: 500,
+    orderBy: { createdAt: "desc" },
+    select: {
+      event: true,
+      meta: true,
+    },
+  });
+
+  const relayDepthMap = new Map<number, number>();
+  for (const event of relayDepthEvents) {
+    const meta = parseMeta(event.meta);
+    const depth = event.event === "relay_entry"
+      ? parseRelayDepth(meta.nextRelayDepth) ?? parseRelayDepth(meta.relayDepth)
+      : parseRelayDepth(meta.relayDepth);
+    if (!depth) continue;
+    relayDepthMap.set(depth, (relayDepthMap.get(depth) ?? 0) + 1);
+  }
+
   // 最近记录
   const recentRecords = await prisma.testRecord.findMany({
     take: 20,
@@ -87,6 +112,9 @@ export async function GET() {
       event: e.event,
       count: e._count.event,
     })),
+    relayDepthStats: Array.from(relayDepthMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([depth, count]) => ({ depth, count })),
     recentEvents: recentEvents.map((e) => {
       const meta = parseMeta(e.meta);
       return {
@@ -102,6 +130,8 @@ export async function GET() {
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
         relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
         relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,
+        relayDepth: parseRelayDepth(meta.relayDepth),
+        nextRelayDepth: parseRelayDepth(meta.nextRelayDepth),
         createdAt: e.createdAt,
       };
     }),

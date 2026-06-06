@@ -14,6 +14,7 @@ export type AttributionContext = {
   shareBy?: string;
   relayFrom?: string;
   relayRoot?: string;
+  relayDepth?: number;
 };
 
 const SESSION_KEY = "eva-covenant-session";
@@ -37,6 +38,14 @@ function getParam(params: URLSearchParams, key: string, maxLength = 120) {
   return value ? value.slice(0, maxLength) : undefined;
 }
 
+function getPositiveIntParam(params: URLSearchParams, key: string) {
+  const raw = params.get(key);
+  if (!raw) return undefined;
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value < 1) return undefined;
+  return Math.min(value, 99);
+}
+
 export function getAttribution(): AttributionContext {
   if (typeof window === "undefined") return {};
   const params = new URLSearchParams(window.location.search);
@@ -47,19 +56,27 @@ export function getAttribution(): AttributionContext {
     utmMedium: getParam(params, "utm_medium", 80),
     relayFrom: getParam(params, "relay_from"),
     relayRoot: getParam(params, "relay_root"),
+    relayDepth: getPositiveIntParam(params, "relay_depth"),
   };
 }
 
-export function buildShareUrl(shareBy: string, relayFrom?: string, relayRoot?: string) {
+export function normalizeRelayDepth(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+  return Math.min(Math.max(Math.trunc(value), 1), 99);
+}
+
+export function buildShareUrl(shareBy: string, relayFrom?: string, relayRoot?: string, relayDepth?: number) {
   if (typeof window === "undefined") return "";
 
   const upstream = relayFrom ?? getAttribution().shareBy;
   const root = relayRoot ?? getAttribution().relayRoot ?? upstream;
+  const depth = normalizeRelayDepth(relayDepth);
   const url = new URL(window.location.origin);
   url.searchParams.set("utm_source", "result_share");
   url.searchParams.set("utm_medium", "share");
   url.searchParams.set("utm_campaign", "formation_relay");
   url.searchParams.set("share_by", shareBy);
+  url.searchParams.set("relay_depth", depth.toString());
   if (upstream && upstream !== shareBy) url.searchParams.set("relay_from", upstream);
   if (root && root !== shareBy) url.searchParams.set("relay_root", root);
   return url.toString();
@@ -79,6 +96,7 @@ export function trackEvent(event: EventName, meta?: Record<string, unknown>) {
       utmMedium: attribution.utmMedium,
       relayFrom: attribution.relayFrom,
       relayRoot: attribution.relayRoot,
+      relayDepth: attribution.relayDepth,
       ...meta,
     },
   };

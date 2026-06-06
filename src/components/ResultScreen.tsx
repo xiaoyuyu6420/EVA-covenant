@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Copy, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
-import { buildShareUrl, trackEvent } from "@/lib/analytics";
+import { buildShareUrl, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
 
 interface Props {
   result: FullResult;
@@ -14,6 +14,7 @@ interface Props {
   userGrades: Grade[] | null;
   relaySourceCode?: string;
   relayRootCode?: string;
+  relayDepth?: number;
 }
 
 type Theme = {
@@ -613,6 +614,7 @@ export default function ResultScreen({
   userGrades,
   relaySourceCode,
   relayRootCode,
+  relayDepth,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const top = result.top;
@@ -643,18 +645,25 @@ export default function ResultScreen({
     : "让一个和你差异很大的人测一次，结果最容易拉开。";
   const formationCode = `${profile.marker}-${top.code}-${topDimensionCodes || "SYNC"}`.replace(/\s+/g, "").toUpperCase();
   const effectiveRelayRootCode = relayRootCode ?? relaySourceCode;
+  const currentRelayDepth = normalizeRelayDepth(relayDepth);
+  const relayNodeLabel = currentRelayDepth.toString().padStart(2, "0");
+  const upstreamLabel = relaySourceCode ?? "DIRECT";
+  const relayPrompt = relaySourceCode
+    ? "继续转给一个和你风格不同的人，让下一站接在你的编队后面。"
+    : "发给一个和你风格不同的人，让 TA 接出下一站。";
   const relayLine = relaySourceCode
-    ? `我接入了 ${relaySourceCode} 的编队，现在回传自己的结果。`
+    ? `我接入了 ${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
     : "";
-  const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode);
+  const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth);
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
     relayLine,
     `编队码：${formationCode}`,
+    `接力站位：第 ${currentRelayDepth} 站`,
     topDimensionLabels ? `高位指标：${topDimensionLabels}` : "",
     invitePrompt,
-    "你测完把机体和编队码发我，看能不能凑一支 EVA 编队。",
+    relayPrompt,
     shareUrl,
   ].filter(Boolean).join("\n");
 
@@ -676,6 +685,7 @@ export default function ResultScreen({
       formationCode,
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
+      relayDepth: currentRelayDepth,
     });
 
     try {
@@ -689,6 +699,7 @@ export default function ResultScreen({
         formationCode,
         relayFrom: relaySourceCode,
         relayRoot: effectiveRelayRootCode,
+        relayDepth: currentRelayDepth,
       });
     } catch {
       setCopied(false);
@@ -705,6 +716,7 @@ export default function ResultScreen({
           formationCode,
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
+          relayDepth: currentRelayDepth,
         });
         await navigator.share({
           title: "EVA 适格机体测试",
@@ -718,6 +730,7 @@ export default function ResultScreen({
           formationCode,
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
+          relayDepth: currentRelayDepth,
         });
         return;
       } catch (error) {
@@ -950,10 +963,32 @@ export default function ResultScreen({
             </p>
           </div>
 
+          <div className="mt-3 grid grid-cols-[78px_minmax(0,1fr)] gap-2">
+            <div className="border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.2)" }}>
+              <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                YOUR NODE
+              </p>
+              <p className="mt-1 text-[1.35rem] leading-none" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}>
+                {relayNodeLabel}
+              </p>
+            </div>
+            <div className="border border-white/10 px-3 py-2 min-w-0" style={{ background: "rgba(0,0,0,0.2)" }}>
+              <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                UPSTREAM
+              </p>
+              <p
+                className="mt-1 text-[0.72rem] leading-[1.35] break-all"
+                style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}
+              >
+                {upstreamLabel}
+              </p>
+            </div>
+          </div>
+
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-end">
             <p className="text-[0.92rem] leading-[1.7] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
               {invitePrompt}
-              <span className="block mt-1 text-[#aaa]">让对方回传机体和编队码，差异会比单看结果更明显。</span>
+              <span className="block mt-1 text-[#aaa]">{relayPrompt}</span>
             </p>
             <div className="flex gap-2 sm:justify-end">
               {topDimensions.slice(0, 3).map((d) => (

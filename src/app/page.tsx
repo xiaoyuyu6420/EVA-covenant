@@ -5,7 +5,7 @@ import { useQuiz } from "@/hooks/useQuiz";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import TestScreen from "@/components/TestScreen";
 import ResultScreen from "@/components/ResultScreen";
-import { getAttribution, trackEvent, type AttributionContext } from "@/lib/analytics";
+import { getAttribution, normalizeRelayDepth, trackEvent, type AttributionContext } from "@/lib/analytics";
 
 const EMPTY_ATTRIBUTION: AttributionContext = {};
 let attributionCacheKey = "";
@@ -41,6 +41,9 @@ export default function Home() {
     getAttributionSnapshot,
     getServerAttributionSnapshot
   );
+  const currentRelayDepth = attribution.shareBy
+    ? normalizeRelayDepth((attribution.relayDepth ?? 1) + 1)
+    : 1;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (screen !== "test") return;
@@ -67,6 +70,8 @@ export default function Home() {
         formationCode: currentAttribution.shareBy,
         relayFrom: currentAttribution.relayFrom,
         relayRoot: currentAttribution.relayRoot,
+        relayDepth: currentAttribution.relayDepth ?? 1,
+        nextRelayDepth: normalizeRelayDepth((currentAttribution.relayDepth ?? 1) + 1),
       });
     }
   }, []);
@@ -83,8 +88,11 @@ export default function Home() {
       similarity: result.top.similarity,
       isSpecial: result.top.isSpecial,
       isBoundary: result.top.isBoundary,
+      relayFrom: attribution.shareBy,
+      relayRoot: attribution.relayRoot ?? attribution.relayFrom,
+      relayDepth: currentRelayDepth,
     });
-  }, [result, screen]);
+  }, [attribution.relayDepth, attribution.relayFrom, attribution.relayRoot, attribution.shareBy, currentRelayDepth, result, screen]);
 
   const handleStartTest = useCallback(() => {
     trackEvent("quiz_start");
@@ -109,6 +117,7 @@ export default function Home() {
             onStart={handleStartTest}
             inviteCode={attribution.shareBy}
             relayFrom={attribution.relayFrom}
+            relayDepth={attribution.relayDepth}
           />
         )}
         {screen === "loading" && (
@@ -134,6 +143,7 @@ export default function Home() {
             userGrades={userGrades}
             relaySourceCode={attribution.shareBy}
             relayRootCode={attribution.relayRoot ?? attribution.relayFrom}
+            relayDepth={currentRelayDepth}
           />
         )}
         {screen === "calculating" && (

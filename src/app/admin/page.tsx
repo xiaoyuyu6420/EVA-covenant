@@ -72,12 +72,14 @@ interface Analytics {
   deviceCounts: { mobile: number; desktop: number; other: number };
   eventCounts: { event: string; count: number }[];
   eventUtmStats: { source: string | null; event: string; count: number }[];
+  relayDepthStats: { depth: number; count: number }[];
   recentEvents: {
     id: number; event: string; page: string | null;
     utmSource: string | null; sessionId: string | null;
     code: string | null; unit: string | null; channel: string | null;
     formationCode: string | null; shareBy: string | null;
     relayFrom: string | null; relayRoot: string | null;
+    relayDepth: number | null; nextRelayDepth: number | null;
     createdAt: string;
   }[];
   recentRecords: {
@@ -259,6 +261,7 @@ function RecordsPanel() {
   const maxEventCount = Math.max(...FUNNEL_EVENTS.map((event) => eventCountMap.get(event) ?? 0), 1);
   const maxUtmCount = Math.max(...data.utmStats.map((item) => item.count), 1);
   const maxEventUtmCount = Math.max(...data.eventUtmStats.map((item) => item.count), 1);
+  const maxRelayDepthCount = Math.max(...data.relayDepthStats.map((item) => item.count), 1);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -343,6 +346,27 @@ function RecordsPanel() {
       </div>
 
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">RELAY DEPTH — 接力深度</h3>
+        <div className="space-y-2">
+          {data.relayDepthStats.map((item) => (
+            <div key={item.depth} className="flex items-center gap-3">
+              <span className="w-20 text-xs eva-text text-[#94a3b8]">NODE {String(item.depth).padStart(2, "0")}</span>
+              <div className="flex-1 h-5 bg-[#1e1b2e] rounded overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#f97316] to-[#4ade80] rounded"
+                  style={{ width: `${Math.max((item.count / maxRelayDepthCount) * 100, 5)}%` }}
+                />
+              </div>
+              <span className="w-10 text-right text-xs eva-text text-[#4ade80]">{item.count}</span>
+            </div>
+          ))}
+          {data.relayDepthStats.length === 0 && (
+            <p className="text-[#64748b] text-sm text-center py-4">暂无接力深度数据</p>
+          )}
+        </div>
+      </div>
+
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
         <h3 className="nerv-label mb-4">RECENT SHARE EVENTS — 最近传播事件</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -352,6 +376,7 @@ function RecordsPanel() {
                 <th className="text-left py-2 px-3 nerv-label">机体</th>
                 <th className="text-left py-2 px-3 nerv-label">渠道</th>
                 <th className="text-left py-2 px-3 nerv-label">编队码</th>
+                <th className="text-left py-2 px-3 nerv-label">深度</th>
                 <th className="text-left py-2 px-3 nerv-label">来源</th>
                 <th className="text-left py-2 px-3 nerv-label">时间</th>
               </tr>
@@ -369,6 +394,13 @@ function RecordsPanel() {
                         FROM {event.relayFrom ?? "—"} / ROOT {event.relayRoot ?? "—"}
                       </span>
                     )}
+                  </td>
+                  <td className="py-2 px-3 eva-text text-[#64748b]">
+                    {event.nextRelayDepth
+                      ? `${event.relayDepth ?? "?"} -> ${event.nextRelayDepth}`
+                      : event.relayDepth
+                        ? `#${event.relayDepth}`
+                        : "—"}
                   </td>
                   <td className="py-2 px-3 eva-text text-[#64748b]">{sourceLabel(event.utmSource)}</td>
                   <td className="py-2 px-3 eva-text text-[#64748b] text-xs">

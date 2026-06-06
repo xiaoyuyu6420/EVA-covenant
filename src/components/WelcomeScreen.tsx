@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useT } from "@/lib/i18n/context";
+import { normalizeRelayDepth } from "@/lib/analytics";
 import LangSelector from "./LangSelector";
 
 interface Props {
   onStart: () => void;
   inviteCode?: string;
   relayFrom?: string;
+  relayDepth?: number;
 }
 
 type NavigatorWithStandalone = Navigator & {
@@ -26,11 +28,13 @@ function requestDocumentFullscreen() {
   return requestFullscreen.call(el);
 }
 
-export default function WelcomeScreen({ onStart, inviteCode, relayFrom }: Props) {
+export default function WelcomeScreen({ onStart, inviteCode, relayFrom, relayDepth }: Props) {
   const [bootPhase, setBootPhase] = useState(0);
   const [pilotCount, setPilotCount] = useState<number | null>(null);
   const [showFSModal, setShowFSModal] = useState(false);
   const t = useT();
+  const sourceRelayDepth = normalizeRelayDepth(relayDepth);
+  const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), 400);
@@ -151,6 +155,24 @@ export default function WelcomeScreen({ onStart, inviteCode, relayFrom }: Props)
             >
               {inviteCode}
             </p>
+          </div>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div className="border border-white/10 bg-black/20 px-3 py-2">
+              <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                SOURCE NODE
+              </p>
+              <p className="mt-1 text-[1rem] leading-none" style={{ color: "var(--nerv-orange)", fontFamily: "var(--font-num)" }}>
+                {sourceRelayDepth.toString().padStart(2, "0")}
+              </p>
+            </div>
+            <div className="border border-white/10 bg-black/20 px-3 py-2">
+              <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                YOUR NODE
+              </p>
+              <p className="mt-1 text-[1rem] leading-none" style={{ color: "var(--eva-green)", fontFamily: "var(--font-num)" }}>
+                {nextRelayDepth.toString().padStart(2, "0")}
+              </p>
+            </div>
           </div>
           <p className="text-[0.92rem] leading-[1.7] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
             {t("welcome.relayDesc")}

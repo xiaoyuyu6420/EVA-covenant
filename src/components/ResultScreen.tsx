@@ -617,6 +617,7 @@ export default function ResultScreen({
   relayDepth,
 }: Props) {
   const [copied, setCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
@@ -666,6 +667,11 @@ export default function ResultScreen({
     relayPrompt,
     shareUrl,
   ].filter(Boolean).join("\n");
+  const inviteText = [
+    `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
+    `你测完把机体和编队码发我，看看你会接到哪一站：`,
+    shareUrl,
+  ].join("\n");
 
   const themeStyle = {
     "--unit-bg": profile.theme.bg,
@@ -738,6 +744,35 @@ export default function ResultScreen({
       }
     }
     await copyResult("fallback");
+  };
+
+  const copyInvite = async () => {
+    trackEvent("share_click", {
+      channel: "invite_copy",
+      code: top.code,
+      unit: profile.displayName,
+      formationCode,
+      relayFrom: relaySourceCode,
+      relayRoot: effectiveRelayRootCode,
+      relayDepth: currentRelayDepth,
+    });
+
+    try {
+      await navigator.clipboard.writeText(inviteText);
+      setInviteCopied(true);
+      window.setTimeout(() => setInviteCopied(false), 1600);
+      trackEvent("share_success", {
+        channel: "invite_copy",
+        code: top.code,
+        unit: profile.displayName,
+        formationCode,
+        relayFrom: relaySourceCode,
+        relayRoot: effectiveRelayRootCode,
+        relayDepth: currentRelayDepth,
+      });
+    } catch {
+      setInviteCopied(false);
+    }
   };
 
   return (
@@ -1050,6 +1085,32 @@ export default function ResultScreen({
               </div>
             );
           })}
+        </div>
+      </motion.section>
+
+      <motion.section
+        className="px-5 py-5 border-b border-white/10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.42, duration: 0.4 }}
+      >
+        <div className="border border-white/10 p-4" style={{ background: "rgba(0,0,0,0.2)" }}>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
+              NEXT RELAY
+            </h2>
+            <button
+              onClick={copyInvite}
+              className="h-8 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
+              style={{ fontFamily: "var(--font-tech)" }}
+            >
+              <Copy size={13} aria-hidden="true" />
+              {inviteCopied ? "COPIED" : "COPY INVITE"}
+            </button>
+          </div>
+          <p className="text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+            我这站是 {profile.displayName} / NODE {relayNodeLabel}。把这段发给你想对照的人，让 TA 接出下一站。
+          </p>
         </div>
       </motion.section>
 

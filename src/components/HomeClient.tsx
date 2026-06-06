@@ -143,6 +143,7 @@ export default function HomeClient() {
             shareUnit={attribution.shareUnit}
             relayFrom={attribution.relayFrom}
             relayDepth={attribution.relayDepth}
+            inviteTarget={attribution.inviteTarget}
             inviteLabel={attribution.inviteLabel}
             relayRelation={attribution.relayRelation}
             inviteNamed={attribution.inviteNamed}

@@ -12,6 +12,7 @@ interface Props {
   shareUnit?: string;
   relayFrom?: string;
   relayDepth?: number;
+  inviteTarget?: string;
   inviteLabel?: string;
   relayRelation?: string;
   inviteNamed?: boolean;
@@ -38,6 +39,7 @@ export default function WelcomeScreen({
   shareUnit,
   relayFrom,
   relayDepth,
+  inviteTarget,
   inviteLabel,
   relayRelation,
   inviteNamed,
@@ -50,6 +52,9 @@ export default function WelcomeScreen({
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
   const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
   const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation || inviteNamed);
+  const relayChallengeKey = inviteTarget && ["contrast", "same_axis", "verify", "history"].includes(inviteTarget)
+    ? `welcome.relayChallenge.${inviteTarget}`
+    : "welcome.relayChallenge.general";
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), isRelayEntry ? 120 : 400);
@@ -237,6 +242,14 @@ export default function WelcomeScreen({
           <p className="text-[0.92rem] leading-[1.7] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
             {t("welcome.relayDesc")}
           </p>
+          <div className="mt-3 border-l-[3px] border-[var(--eva-green)] bg-black/20 px-3 py-2">
+            <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+              WHY YOU
+            </p>
+            <p className="mt-1 text-[0.86rem] leading-[1.6] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+              {t(relayChallengeKey)}
+            </p>
+          </div>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {[
               ["01", t("welcome.relayStep1")],

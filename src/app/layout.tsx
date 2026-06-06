@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Serif_SC, Share_Tech_Mono, Teko, JetBrains_Mono } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
+import { getSiteUrl } from "@/lib/site";
 import "./globals.css";
 
 const notoSerif = Noto_Serif_SC({
@@ -38,6 +39,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: getSiteUrl(),
   title,
   description,
   keywords: ["EVA", "新世纪福音战士", "人格测试", "适格者", "NERV", "驾驶员", "personality test", "Evangelion"],

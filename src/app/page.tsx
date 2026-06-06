@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import HomeClient from "@/components/HomeClient";
+import { getSiteUrl } from "@/lib/site";
 
 const DEFAULT_TITLE = "EVA 驾驶员适格测试 | NERV-HQ";
 const DEFAULT_DESCRIPTION = "NERV紧急征召——你的适格率是多少？15维度心理测绘，24种人格匹配，测出你的EVA驾驶员类型。新世纪福音战士人格测试";
@@ -21,6 +22,20 @@ function cleanRelayDepth(value: string | string[] | undefined) {
   const depth = Number.parseInt(raw, 10);
   if (!Number.isFinite(depth) || depth < 1) return undefined;
   return Math.min(depth, 99);
+}
+
+function buildRelayOgImageUrl(params: {
+  shareBy: string;
+  relayDepth?: number;
+  inviteLabel?: string;
+  relayRelation?: string;
+}) {
+  const url = new URL("/api/og", getSiteUrl());
+  url.searchParams.set("share_by", params.shareBy);
+  if (params.relayDepth) url.searchParams.set("relay_depth", params.relayDepth.toString());
+  if (params.inviteLabel) url.searchParams.set("invite_label", params.inviteLabel);
+  if (params.relayRelation) url.searchParams.set("relay_relation", params.relayRelation);
+  return url;
 }
 
 export async function generateMetadata(
@@ -47,6 +62,12 @@ export async function generateMetadata(
   ].filter(Boolean);
   const context = contextParts.length > 0 ? `${contextParts.join(" / ")}。` : "";
   const description = `来自编队码 ${shareBy} 的接力邀请。${context}完成测试后生成你的机体和第 ${nextDepth} 站编队码。`;
+  const ogImageUrl = buildRelayOgImageUrl({
+    shareBy,
+    relayDepth: sourceDepth,
+    inviteLabel,
+    relayRelation,
+  });
 
   return {
     title,
@@ -57,11 +78,20 @@ export async function generateMetadata(
       type: "website",
       locale: "zh_CN",
       siteName: "EVA-Covenant",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: "EVA 编队接力分享卡片",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImageUrl],
     },
   };
 }

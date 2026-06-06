@@ -55,6 +55,17 @@ type RelayRelation = {
   sharedDimensionCodes: string[];
 };
 
+type RelayInviteKey = "general" | "contrast" | "same_axis" | "verify";
+
+type RelayInviteOption = {
+  key: RelayInviteKey;
+  label: string;
+  title: string;
+  target: string;
+  reason: string;
+  message: string;
+};
+
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
 const GRADE_VALUE: Record<Grade, number> = { L: 0, M: 1, H: 2, X: 3 };
@@ -722,7 +733,7 @@ export default function ResultScreen({
   relayDepth,
 }: Props) {
   const [copied, setCopied] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
+  const [copiedInviteKey, setCopiedInviteKey] = useState<RelayInviteKey | null>(null);
   const [returnCopied, setReturnCopied] = useState(false);
   const top = result.top;
   const profile = getProfile(top);
@@ -763,6 +774,8 @@ export default function ResultScreen({
     : "";
   const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth);
   const relayRelation = getRelayRelation(formationCode, relaySourceCode);
+  const primaryDimensionCode = primaryDimension ? DIMENSIONS[primaryDimension.index].code : "CORE";
+  const primaryDimensionName = primaryDimension ? DIMENSIONS[primaryDimension.index].name : "核心指标";
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
@@ -775,11 +788,58 @@ export default function ResultScreen({
     relayPrompt,
     shareUrl,
   ].filter(Boolean).join("\n");
-  const inviteText = [
-    `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
-    `你测完把机体和编队码发我，看看你会接到哪一站：`,
-    shareUrl,
-  ].join("\n");
+  const relayInviteOptions: RelayInviteOption[] = [
+    {
+      key: "general",
+      label: "GENERAL",
+      title: "下一站",
+      target: "发给一个你想对照的人。",
+      reason: "测完把机体和编队码发回来，就能接上这条编队。",
+      message: [
+        `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
+        "你测完把机体和编队码发我，看看你会接到哪一站：",
+        shareUrl,
+      ].join("\n"),
+    },
+    {
+      key: "contrast",
+      label: "CONTRAST",
+      title: "反差位",
+      target: "找一个做事节奏和你明显不同的人。",
+      reason: "反差越清楚，机体编号和高位指标越容易聊起来。",
+      message: [
+        `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
+        "想找一个反差位接下一站：你测完把机体和编队码发我。",
+        "看我们是同轴、分支，还是完全反差：",
+        shareUrl,
+      ].join("\n"),
+    },
+    {
+      key: "same_axis",
+      label: "SAME AXIS",
+      title: "同轴位",
+      target: `找一个在「${primaryDimensionName}」上可能和你很像的人。`,
+      reason: `同一个 ${primaryDimensionCode} 指标，可能会落到完全不同的机体。`,
+      message: [
+        `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
+        "你可能和我有同一个轴，测完把机体和编队码发我对一下：",
+        shareUrl,
+      ].join("\n"),
+    },
+    {
+      key: "verify",
+      label: "VERIFY",
+      title: "校验位",
+      target: "找一个很了解你的人。",
+      reason: "让熟人也测一次，最容易出现互相校验和反驳。",
+      message: [
+        `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
+        "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下：",
+        shareUrl,
+      ].join("\n"),
+    },
+  ];
+  const generalInvite = relayInviteOptions[0];
   const returnText = relayRelation
     ? [
       `我接完你的 EVA 编队了：${relaySourceCode} -> ${formationCode}`,
@@ -867,9 +927,9 @@ export default function ResultScreen({
     await copyResult("fallback");
   };
 
-  const copyInvite = async () => {
+  const copyInvite = async (invite: RelayInviteOption = generalInvite) => {
     trackEvent("share_click", {
-      channel: "invite_copy",
+      channel: invite.key === "general" ? "invite_copy" : "target_invite_copy",
       code: top.code,
       unit: profile.displayName,
       formationCode,
@@ -877,14 +937,16 @@ export default function ResultScreen({
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation?.label,
+      inviteTarget: invite.key,
+      inviteLabel: invite.title,
     });
 
     try {
-      await navigator.clipboard.writeText(inviteText);
-      setInviteCopied(true);
-      window.setTimeout(() => setInviteCopied(false), 1600);
+      await navigator.clipboard.writeText(invite.message);
+      setCopiedInviteKey(invite.key);
+      window.setTimeout(() => setCopiedInviteKey(null), 1600);
       trackEvent("share_success", {
-        channel: "invite_copy",
+        channel: invite.key === "general" ? "invite_copy" : "target_invite_copy",
         code: top.code,
         unit: profile.displayName,
         formationCode,
@@ -892,9 +954,11 @@ export default function ResultScreen({
         relayRoot: effectiveRelayRootCode,
         relayDepth: currentRelayDepth,
         relayRelation: relayRelation?.label,
+        inviteTarget: invite.key,
+        inviteLabel: invite.title,
       });
     } catch {
-      setInviteCopied(false);
+      setCopiedInviteKey(null);
     }
   };
 
@@ -1320,23 +1384,61 @@ export default function ResultScreen({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.42, duration: 0.4 }}
       >
-        <div className="border border-white/10 p-4" style={{ background: "rgba(0,0,0,0.2)" }}>
-          <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-start min-[430px]:justify-between mb-4">
+          <div>
             <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
               NEXT RELAY
             </h2>
-            <button
-              onClick={copyInvite}
-              className="h-8 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
-              style={{ fontFamily: "var(--font-tech)" }}
-            >
-              <Copy size={13} aria-hidden="true" />
-              {inviteCopied ? "COPIED" : "COPY INVITE"}
-            </button>
+            <p className="mt-2 text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+              我这站是 {profile.displayName} / NODE {relayNodeLabel}。选一个最像 TA 的位置发出去，让下一站更容易接上。
+            </p>
           </div>
-          <p className="text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-            我这站是 {profile.displayName} / NODE {relayNodeLabel}。把这段发给你想对照的人，让 TA 接出下一站。
-          </p>
+          <button
+            onClick={() => copyInvite(generalInvite)}
+            className="h-9 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex shrink-0 items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
+            style={{ fontFamily: "var(--font-tech)" }}
+          >
+            <Copy size={13} aria-hidden="true" />
+            {copiedInviteKey === "general" ? "COPIED" : "COPY INVITE"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {relayInviteOptions.slice(1).map((invite) => (
+            <div
+              key={invite.key}
+              className="border border-white/10 p-3 min-h-[148px] flex flex-col"
+              style={{
+                background: "rgba(0,0,0,0.2)",
+                borderTop: "2px solid var(--unit-primary)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0">
+                  <p className="text-[0.55rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    {invite.label}
+                  </p>
+                  <p className="mt-1 text-[1rem] leading-tight text-white" style={{ fontFamily: "var(--font-title)" }}>
+                    {invite.title}
+                  </p>
+                </div>
+                <button
+                  onClick={() => copyInvite(invite)}
+                  className="h-8 min-w-[68px] px-2 border border-white/15 text-[0.58rem] tracking-[0.12em] text-[#aaa] flex shrink-0 items-center justify-center gap-1 transition-colors hover:text-white hover:border-white/30"
+                  style={{ fontFamily: "var(--font-tech)" }}
+                >
+                  <Copy size={12} aria-hidden="true" />
+                  {copiedInviteKey === invite.key ? "COPIED" : "COPY"}
+                </button>
+              </div>
+              <p className="text-[0.82rem] leading-[1.65] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+                {invite.target}
+              </p>
+              <p className="mt-auto pt-3 text-[0.72rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
+                {invite.reason}
+              </p>
+            </div>
+          ))}
         </div>
       </motion.section>
 

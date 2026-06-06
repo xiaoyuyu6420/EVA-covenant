@@ -250,6 +250,15 @@ export default function WelcomeScreen({
               {t(relayChallengeKey)}
             </p>
           </div>
+          <button
+            onClick={onStart}
+            className="mt-3 w-full py-3 text-center text-[1rem] font-bold tracking-[2px] cursor-pointer
+                       border border-[var(--eva-green)] text-black bg-[var(--eva-green)]
+                       uppercase transition-colors hover:bg-transparent hover:text-[var(--eva-green)]"
+            style={{ fontFamily: "var(--font-title)", boxShadow: "0 0 18px rgba(82,255,0,0.22)" }}
+          >
+            {t("welcome.relayFastStart")}
+          </button>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {[
               ["01", t("welcome.relayStep1")],

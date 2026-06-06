@@ -40,9 +40,25 @@ type ResultProfile = {
   theme: Theme;
 };
 
+type FormationSignature = {
+  marker: string;
+  typeCode: string;
+  dimensionCodes: string[];
+};
+
+type RelayRelation = {
+  label: string;
+  description: string;
+  dimensionNote: string;
+  upstreamLabel: string;
+  currentLabel: string;
+  sharedDimensionCodes: string[];
+};
+
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
 const GRADE_VALUE: Record<Grade, number> = { L: 0, M: 1, H: 2, X: 3 };
+const DIMENSION_NAMES: Map<string, string> = new Map(DIMENSIONS.map((dimension) => [dimension.code, dimension.name]));
 const DIMENSION_CHAIN_PROMPTS = [
   "同步感很强的人，测完通常会有完全不同的机体解释。",
   "压力越大越冷静的人，结果很容易和你形成反差。",
@@ -607,6 +623,95 @@ function getProfile(match: MatchResult): ResultProfile {
   };
 }
 
+function parseFormationCode(code?: string): FormationSignature | null {
+  if (!code) return null;
+  const [marker, typeCode, ...dimensions] = code
+    .trim()
+    .toUpperCase()
+    .split("-")
+    .filter(Boolean);
+
+  if (!marker || !typeCode) return null;
+
+  const dimensionCodes = dimensions
+    .map((dimension) => dimension.match(/^([A-E][1-3])[LMHX]?$/)?.[1])
+    .filter((dimension): dimension is string => Boolean(dimension));
+
+  return { marker, typeCode, dimensionCodes };
+}
+
+function formatDimensionNote(sharedDimensionCodes: string[]) {
+  if (sharedDimensionCodes.length === 0) return "高位指标没有重叠，差异会比较明显";
+  const labels = sharedDimensionCodes
+    .map((code) => `${code}${DIMENSION_NAMES.get(code) ? ` ${DIMENSION_NAMES.get(code)}` : ""}`)
+    .join(" / ");
+  return `共同高位：${labels}`;
+}
+
+function getRelayRelation(currentCode: string, upstreamCode?: string): RelayRelation | null {
+  const current = parseFormationCode(currentCode);
+  const upstream = parseFormationCode(upstreamCode);
+  if (!current || !upstream) return null;
+
+  const sharedDimensionCodes = current.dimensionCodes.filter((code) => upstream.dimensionCodes.includes(code));
+  const upstreamLabel = `${upstream.marker}-${upstream.typeCode}`;
+  const currentLabel = `${current.marker}-${current.typeCode}`;
+  const dimensionNote = formatDimensionNote(sharedDimensionCodes);
+
+  if (current.typeCode === upstream.typeCode) {
+    return {
+      label: "同档回声",
+      description: "结果代码一致，主反应模式很接近；差异重点看高位指标。",
+      dimensionNote,
+      upstreamLabel,
+      currentLabel,
+      sharedDimensionCodes,
+    };
+  }
+
+  if (current.marker === upstream.marker) {
+    return {
+      label: "同机分支",
+      description: "机体编号相同，但结果代码不同；适合比较同一条机体线的两种用法。",
+      dimensionNote,
+      upstreamLabel,
+      currentLabel,
+      sharedDimensionCodes,
+    };
+  }
+
+  if (sharedDimensionCodes.length >= 2) {
+    return {
+      label: "同轴支援",
+      description: "高位指标重叠较多，比较像能互相接住节奏的支援位。",
+      dimensionNote,
+      upstreamLabel,
+      currentLabel,
+      sharedDimensionCodes,
+    };
+  }
+
+  if (sharedDimensionCodes.length === 1) {
+    return {
+      label: "单点交集",
+      description: "你们能对上一个关键点，但处理方式会明显分开。",
+      dimensionNote,
+      upstreamLabel,
+      currentLabel,
+      sharedDimensionCodes,
+    };
+  }
+
+  return {
+    label: "反差编队",
+    description: "高位指标几乎不重叠，适合看谁补上对方的盲区。",
+    dimensionNote,
+    upstreamLabel,
+    currentLabel,
+    sharedDimensionCodes,
+  };
+}
+
 export default function ResultScreen({
   result,
   onRestart,
@@ -618,6 +723,7 @@ export default function ResultScreen({
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [returnCopied, setReturnCopied] = useState(false);
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
@@ -656,12 +762,14 @@ export default function ResultScreen({
     ? `我接入了 ${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
     : "";
   const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth);
+  const relayRelation = getRelayRelation(formationCode, relaySourceCode);
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
     relayLine,
     `编队码：${formationCode}`,
     `接力站位：第 ${currentRelayDepth} 站`,
+    relayRelation ? `编队关系：${relayRelation.label}，${relayRelation.dimensionNote}。` : "",
     topDimensionLabels ? `高位指标：${topDimensionLabels}` : "",
     invitePrompt,
     relayPrompt,
@@ -672,6 +780,15 @@ export default function ResultScreen({
     `你测完把机体和编队码发我，看看你会接到哪一站：`,
     shareUrl,
   ].join("\n");
+  const returnText = relayRelation
+    ? [
+      `我接完你的 EVA 编队了：${relaySourceCode} -> ${formationCode}`,
+      `我的结果：${profile.displayName} / NODE ${relayNodeLabel}`,
+      `编队关系：${relayRelation.label}。${relayRelation.dimensionNote}。`,
+      relayRelation.description,
+      "你可以再找一个和我们都不太一样的人接下一站。",
+    ].join("\n")
+    : "";
 
   const themeStyle = {
     "--unit-bg": profile.theme.bg,
@@ -692,6 +809,7 @@ export default function ResultScreen({
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
+      relayRelation: relayRelation?.label,
     });
 
     try {
@@ -706,6 +824,7 @@ export default function ResultScreen({
         relayFrom: relaySourceCode,
         relayRoot: effectiveRelayRootCode,
         relayDepth: currentRelayDepth,
+        relayRelation: relayRelation?.label,
       });
     } catch {
       setCopied(false);
@@ -723,6 +842,7 @@ export default function ResultScreen({
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
           relayDepth: currentRelayDepth,
+          relayRelation: relayRelation?.label,
         });
         await navigator.share({
           title: "EVA 适格机体测试",
@@ -737,6 +857,7 @@ export default function ResultScreen({
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
           relayDepth: currentRelayDepth,
+          relayRelation: relayRelation?.label,
         });
         return;
       } catch (error) {
@@ -755,6 +876,7 @@ export default function ResultScreen({
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
+      relayRelation: relayRelation?.label,
     });
 
     try {
@@ -769,9 +891,43 @@ export default function ResultScreen({
         relayFrom: relaySourceCode,
         relayRoot: effectiveRelayRootCode,
         relayDepth: currentRelayDepth,
+        relayRelation: relayRelation?.label,
       });
     } catch {
       setInviteCopied(false);
+    }
+  };
+
+  const copyReturn = async () => {
+    if (!returnText || !relayRelation) return;
+
+    trackEvent("share_click", {
+      channel: "return_copy",
+      code: top.code,
+      unit: profile.displayName,
+      formationCode,
+      relayFrom: relaySourceCode,
+      relayRoot: effectiveRelayRootCode,
+      relayDepth: currentRelayDepth,
+      relayRelation: relayRelation.label,
+    });
+
+    try {
+      await navigator.clipboard.writeText(returnText);
+      setReturnCopied(true);
+      window.setTimeout(() => setReturnCopied(false), 1600);
+      trackEvent("share_success", {
+        channel: "return_copy",
+        code: top.code,
+        unit: profile.displayName,
+        formationCode,
+        relayFrom: relaySourceCode,
+        relayRoot: effectiveRelayRootCode,
+        relayDepth: currentRelayDepth,
+        relayRelation: relayRelation.label,
+      });
+    } catch {
+      setReturnCopied(false);
     }
   };
 
@@ -1040,6 +1196,76 @@ export default function ResultScreen({
           </div>
         </div>
       </motion.section>
+
+      {relayRelation ? (
+        <motion.section
+          className="px-5 py-5 border-b border-white/10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.36, duration: 0.4 }}
+        >
+          <div
+            className="border border-white/10 p-4"
+            style={{
+              background: "rgba(0,0,0,0.22)",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
+            }}
+          >
+            <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between mb-4">
+              <div>
+                <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
+                  UPSTREAM MATCH
+                </h2>
+                <p className="mt-1 text-[0.66rem] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                  RETURN LINK
+                </p>
+              </div>
+              <button
+                onClick={copyReturn}
+                className="h-9 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
+                style={{ fontFamily: "var(--font-tech)" }}
+              >
+                <Copy size={13} aria-hidden="true" />
+                {returnCopied ? "COPIED" : "COPY RETURN"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] gap-2 items-center mb-4">
+              <div className="min-w-0">
+                <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                  UPSTREAM
+                </p>
+                <p className="mt-1 text-[0.78rem] leading-[1.35] break-all" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
+                  {relayRelation.upstreamLabel}
+                </p>
+              </div>
+              <div
+                className="h-px"
+                style={{ background: "linear-gradient(90deg, transparent, var(--unit-primary), transparent)" }}
+                aria-hidden="true"
+              />
+              <div className="min-w-0 text-right">
+                <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                  YOUR NODE
+                </p>
+                <p className="mt-1 text-[0.78rem] leading-[1.35] break-all" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
+                  {relayRelation.currentLabel}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-l-[3px] pl-4" style={{ borderColor: "var(--unit-primary)" }}>
+              <p className="text-[1.3rem] leading-none text-white" style={{ fontFamily: "var(--font-title)" }}>
+                {relayRelation.label}
+              </p>
+              <p className="mt-3 text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+                {relayRelation.description}
+                <span className="block mt-1 text-[#aaa]">{relayRelation.dimensionNote}。</span>
+              </p>
+            </div>
+          </div>
+        </motion.section>
+      ) : null}
 
       <motion.section
         className="px-5 py-5"

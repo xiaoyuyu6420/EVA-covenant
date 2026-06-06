@@ -64,6 +64,8 @@ type RelayInviteOption = {
   title: string;
   target: string;
   reason: string;
+  url: string;
+  nativeText: string;
   message: string;
 };
 
@@ -776,6 +778,10 @@ export default function ResultScreen({
       inviteLabel,
       relayRelation: relayRelation?.label,
     });
+  const generalInviteUrl = buildInviteShareUrl("general", "下一站");
+  const contrastInviteUrl = buildInviteShareUrl("contrast", "反差位");
+  const sameAxisInviteUrl = buildInviteShareUrl("same_axis", "同轴位");
+  const verifyInviteUrl = buildInviteShareUrl("verify", "校验位");
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
@@ -795,10 +801,15 @@ export default function ResultScreen({
       title: "下一站",
       target: "发给一个你想对照的人。",
       reason: "测完把机体和编队码发回来，就能接上这条编队。",
+      url: generalInviteUrl,
+      nativeText: [
+        `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
+        "你测完把机体和编队码发我，看看你会接到哪一站。",
+      ].join("\n"),
       message: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
         "你测完把机体和编队码发我，看看你会接到哪一站：",
-        buildInviteShareUrl("general", "下一站"),
+        generalInviteUrl,
       ].join("\n"),
     },
     {
@@ -807,11 +818,17 @@ export default function ResultScreen({
       title: "反差位",
       target: "找一个做事节奏和你明显不同的人。",
       reason: "反差越清楚，机体编号和高位指标越容易聊起来。",
+      url: contrastInviteUrl,
+      nativeText: [
+        `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
+        "想找一个反差位接下一站：你测完把机体和编队码发我。",
+        "看我们是同轴、分支，还是完全反差。",
+      ].join("\n"),
       message: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
         "想找一个反差位接下一站：你测完把机体和编队码发我。",
         "看我们是同轴、分支，还是完全反差：",
-        buildInviteShareUrl("contrast", "反差位"),
+        contrastInviteUrl,
       ].join("\n"),
     },
     {
@@ -820,10 +837,15 @@ export default function ResultScreen({
       title: "同轴位",
       target: `找一个在「${primaryDimensionName}」上可能和你很像的人。`,
       reason: `同一个 ${primaryDimensionCode} 指标，可能会落到完全不同的机体。`,
+      url: sameAxisInviteUrl,
+      nativeText: [
+        `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
+        "你可能和我有同一个轴，测完把机体和编队码发我对一下。",
+      ].join("\n"),
       message: [
         `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
         "你可能和我有同一个轴，测完把机体和编队码发我对一下：",
-        buildInviteShareUrl("same_axis", "同轴位"),
+        sameAxisInviteUrl,
       ].join("\n"),
     },
     {
@@ -832,10 +854,15 @@ export default function ResultScreen({
       title: "校验位",
       target: "找一个很了解你的人。",
       reason: "让熟人也测一次，最容易出现互相校验和反驳。",
+      url: verifyInviteUrl,
+      nativeText: [
+        `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
+        "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下。",
+      ].join("\n"),
       message: [
         `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
         "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下：",
-        buildInviteShareUrl("verify", "校验位"),
+        verifyInviteUrl,
       ].join("\n"),
     },
   ];
@@ -973,8 +1000,9 @@ export default function ResultScreen({
       try {
         trackInviteShare("share_click", invite, nativeChannel);
         await navigator.share({
-          title: "EVA 编队接力",
-          text: invite.message,
+          title: `EVA 编队接力：${invite.title}`,
+          text: invite.nativeText,
+          url: invite.url || undefined,
         });
         setCopiedInviteKey(invite.key);
         window.setTimeout(() => setCopiedInviteKey(null), 1600);

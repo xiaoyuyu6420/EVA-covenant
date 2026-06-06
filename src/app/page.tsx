@@ -5,12 +5,11 @@ import { useQuiz } from "@/hooks/useQuiz";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import TestScreen from "@/components/TestScreen";
 import ResultScreen from "@/components/ResultScreen";
-import CalculatingScreen from "@/components/CalculatingScreen";
 
 export default function Home() {
   const {
-    screen, currentQ, progress, totalQ, qList, result,
-    startTest, handleAnswer, restart, dimScores, userGrades,
+    screen, currentQ, progress, totalQ, qList, result, dimScores, userGrades,
+    startTest, handleAnswer, restart,
   } = useQuiz();
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -57,9 +56,26 @@ export default function Home() {
             onRestart={restart}
           />
         )}
-        {screen === "calculating" && <CalculatingScreen userScores={dimScores} userGrades={userGrades ?? undefined} />}
         {screen === "result" && result && (
-          <ResultScreen result={result} onRestart={restart} />
+          <ResultScreen
+            result={result}
+            onRestart={restart}
+            dimScores={dimScores}
+            userGrades={userGrades}
+          />
+        )}
+        {screen === "calculating" && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-16 h-16 border-2 border-[var(--eva-purple)] border-t-transparent rounded-full animate-spin mb-6" />
+            <h2 className="text-xl font-bold text-white mb-2">ANALYSIS COMPLETE</h2>
+            <p className="text-gray-400 text-sm mb-8">Test finished. Refresh to start a new session.</p>
+            <button
+              onClick={restart}
+              className="eva-btn border border-[var(--eva-purple)] text-[var(--eva-purple)] px-8 py-3 text-sm tracking-widest hover:bg-[var(--eva-purple)] hover:text-white transition-all"
+            >
+              RESTART
+            </button>
+          </div>
         )}
       </main>
     </div>

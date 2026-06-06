@@ -18,7 +18,7 @@ async function seed() {
   // 插入常规题目
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
-    const question = await prisma.question.create({
+    await prisma.question.create({
       data: {
         dimCode: q.dim,
         text: q.text,
@@ -39,7 +39,7 @@ async function seed() {
     data: {
       dimCode: "GATE",
       text: gateQuestion.text,
-      order: 30, // 在第30题位置
+      order: 19, // 前端在第20题附近插入门控题
       isGate: true,
       options: {
         create: gateQuestion.options.map((opt, j) => ({

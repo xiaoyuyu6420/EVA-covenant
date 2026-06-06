@@ -106,10 +106,10 @@ export const DIM_WEIGHTS = [
 
 // ===== 算法参数 =====
 export const ALGO_PARAMS = {
-  questionsPerDim: 2,
+  questionsPerDim: 3,
   maxScorePerQ: 3,
-  minTotal: 2,
-  maxTotal: 6,
+  minTotal: 3,
+  maxTotal: 9,
   delta: 3,      // Top1/Top2差距阈值 %（相对分档后差异更小）
   threshold: 50, // 兜底相似度下限 %
 };

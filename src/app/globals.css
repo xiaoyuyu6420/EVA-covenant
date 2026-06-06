@@ -5,6 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-mono-en: var(--font-mono), 'Courier Prime', monospace;
+  --font-mono: var(--font-mono), 'Courier Prime', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-tech);
@@ -70,14 +72,22 @@
   --chart-4: #2e1065;
   --chart-5: #52ff00;
 
-  /* EVA custom */
+  /* EVA custom - Enhanced */
   --eva-purple: #7c3aed;
   --eva-purple-light: #a855f7;
   --eva-purple-dark: #4c1d95;
   --eva-purple-deep: #2e1065;
+  --eva-purple-bright: #9B30FF;
+  --eva-cyan: #00D9FF;
+  --eva-cyan-glow: rgba(0, 217, 255, 0.5);
+  --eva-orange: #FF6B35;
+  --eva-orange-alert: #FF4500;
   --eva-green: #52ff00;
+  --eva-green-bright: #00FF41;
+  --eva-gold: #FFD700;
   --nerv-orange: #ff8c00;
   --nerv-red: #ff003c;
+  --eva-pink: #FF1493;
 
   /* Dynamic theme (overridden by JS per result) */
   --theme-color: #a855f7;
@@ -203,3 +213,159 @@ body::after {
   color: #fff !important;
   border-color: var(--theme-color) !important;
 }
+
+/* ===== EVA Enhanced Animations ===== */
+
+/* Glitch animation */
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--eva-cyan-glow), 0 0 10px var(--eva-cyan-glow); }
+  50% { box-shadow: 0 0 15px var(--eva-cyan-glow), 0 0 30px var(--eva-cyan-glow); }
+}
+
+/* Scanline animation */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* Data flow animation */
+@keyframes data-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+/* Border glow animation */
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(155, 48, 255, 0.3); }
+  50% { border-color: var(--eva-purple-light); }
+}
+
+/* Rotate animation for radar */
+@keyframes rotate-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== EVA Utility Classes ===== */
+
+.eva-glitch {
+  animation: glitch 0.3s ease-in-out;
+}
+
+.eva-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.eva-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+.eva-data-flow {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 5px,
+    rgba(0, 217, 255, 0.1) 5px,
+    rgba(0, 217, 255, 0.1) 10px
+  );
+  animation: data-flow 1s linear infinite;
+}
+
+/* NERV style geometric clip path */
+.eva-clip-hex {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.eva-clip-diamond {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.eva-clip-corner {
+  clip-path: polygon(
+    0 15px, 15px 0,
+    calc(100% - 15px) 0, 100% 15px,
+    100% calc(100% - 15px), calc(100% - 15px) 100%,
+    15px 100%, 0 calc(100% - 15px)
+  );
+}
+
+/* Scanline overlay */
+.scanlines::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(0, 217, 255, 0.02) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 9999;
+}
+
+/* Hexagonal background pattern */
+.hex-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239B30FF' fill-opacity='0.05'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v-7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Text gradient effects */
+.text-gradient-eva {
+  background: linear-gradient(135deg, var(--eva-purple-bright) 0%, var(--eva-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-alert {
+  background: linear-gradient(135deg, var(--eva-orange) 0%, var(--nerv-red) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism card */
+.eva-glass {
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(155, 48, 255, 0.3);
+}
+
+/* Corner decorations */
+.eva-corner::before,
+.eva-corner::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--eva-purple-bright);
+  border-style: solid;
+  pointer-events: none;
+}
+
+/* Terminal text effect */
+.terminal-text {
+  font-family: var(--font-mono), 'Courier Prime', monospace;
+  color: var(--eva-green-bright);
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+}
+
+/* Grid line overlay */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(0, 217, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 217, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+

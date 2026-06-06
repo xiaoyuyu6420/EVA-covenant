@@ -159,6 +159,20 @@ export default function WelcomeScreen({ onStart }: Props) {
         <span className="relative z-10">{t("welcome.btn")}</span>
       </motion.button>
 
+      {/* History button */}
+      <motion.button
+        onClick={() => window.location.href = "/history"}
+        className="w-full mt-3 py-3 text-center text-[0.85rem] font-medium tracking-[2px] cursor-pointer
+                   border border-[#333] text-[#666] bg-transparent rounded-lg
+                   uppercase transition-colors hover:border-[#555] hover:text-[#888]"
+        style={{ fontFamily: "var(--font-tech)" }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={bootPhase >= 4 ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        查看历史记录
+      </motion.button>
+
       {/* Footer */}
       <motion.p
         className="mt-auto pt-6 text-center text-[0.65rem] text-[var(--muted-foreground)] tracking-[2px]"

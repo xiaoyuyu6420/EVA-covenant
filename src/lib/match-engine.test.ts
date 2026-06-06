@@ -7,7 +7,7 @@
  * 3. storage: 进度存取
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { scoresToGrades, parseVector, matchPersonality, type MatchInput } from "@/lib/match-engine";
 import { questions, gateQuestion, triggerQuestion, unit13TriggerQuestion, personalityTypes, specialTypes, groups } from "@/lib/quiz-data";
 import { DIMENSIONS, GRADE_VALUES, DIM_WEIGHTS, ALGO_PARAMS } from "@/lib/types";
@@ -137,10 +137,11 @@ describe("matchPersonality: 人格匹配引擎", () => {
   // --- 特殊触发：CMPL（人类补完）---
   describe("特殊触发: CMPL 人类补完", () => {
     it("满足三重条件时触发 CMPL", () => {
-      // gateValue="complement" + triggerValue="CMPL" + C1共情力>=5 + A3 AT力场<=4
+      // gateValue="complement" + triggerValue="CMPL" + 高共情 + 高孤独牵引 + 低AT边界
       const scores = new Array(15).fill(3);
-      scores[6] = 5;  // C1 共情力 >= 5
-      scores[2] = 2;  // A3 AT力场 <= 4
+      scores[6] = 6;  // C1 共情力进入高分档
+      scores[7] = 5;  // C2 孤独倾向进入高分档
+      scores[2] = 1;  // A3 AT力场进入低分档
       
       const result = runMatch(scores, "complement", "CMPL");
       expect(result.top.code).toBe("CMPL");
@@ -151,8 +152,19 @@ describe("matchPersonality: 人格匹配引擎", () => {
     it("C1共情力不足时不触发 CMPL", () => {
       const scores = new Array(15).fill(3);
       scores[6] = 3;  // C1 共情力 < 5
+      scores[7] = 5;
       scores[2] = 2;  // A3 AT力场 <= 4
       
+      const result = runMatch(scores, "complement", "CMPL");
+      expect(result.top.code).not.toBe("CMPL");
+    });
+
+    it("C2孤独牵引不足时不触发 CMPL", () => {
+      const scores = new Array(15).fill(3);
+      scores[6] = 6;
+      scores[7] = 3;
+      scores[2] = 1;
+
       const result = runMatch(scores, "complement", "CMPL");
       expect(result.top.code).not.toBe("CMPL");
     });
@@ -160,6 +172,7 @@ describe("matchPersonality: 人格匹配引擎", () => {
     it("A3 AT力场过高时不触发 CMPL", () => {
       const scores = new Array(15).fill(3);
       scores[6] = 5;  // C1 共情力 >= 5
+      scores[7] = 5;
       scores[2] = 5;  // A3 AT力场 > 4
       
       const result = runMatch(scores, "complement", "CMPL");
@@ -168,8 +181,9 @@ describe("matchPersonality: 人格匹配引擎", () => {
 
     it("gateValue 不匹配时不触发 CMPL", () => {
       const scores = new Array(15).fill(3);
-      scores[6] = 5;
-      scores[2] = 2;
+      scores[6] = 6;
+      scores[7] = 5;
+      scores[2] = 1;
       
       const result = runMatch(scores, "transcend", "CMPL");
       expect(result.top.code).not.toBe("CMPL");
@@ -177,8 +191,9 @@ describe("matchPersonality: 人格匹配引擎", () => {
 
     it("triggerValue 不匹配时不触发 CMPL", () => {
       const scores = new Array(15).fill(3);
-      scores[6] = 5;
-      scores[2] = 2;
+      scores[6] = 6;
+      scores[7] = 5;
+      scores[2] = 1;
       
       const result = runMatch(scores, "complement", undefined);
       expect(result.top.code).not.toBe("CMPL");
@@ -275,12 +290,12 @@ describe("matchPersonality: 人格匹配引擎", () => {
 // 4. quiz-data 数据完整性
 // ============================================================
 describe("quiz-data: 数据完整性验证", () => {
-  it("常规题目数量 = 15维度 × 2 = 30道", () => {
-    expect(questions).toHaveLength(30);
+  it("常规题目数量 = 15维度 × 3 = 45道", () => {
+    expect(questions).toHaveLength(45);
   });
 
   it("每道题有3个选项，分数为 1/2/3", () => {
-    questions.forEach((q, i) => {
+    questions.forEach((q) => {
       expect(q.options).toHaveLength(3);
       q.options.forEach((opt) => {
         expect([1, 2, 3]).toContain(opt.score);
@@ -295,13 +310,13 @@ describe("quiz-data: 数据完整性验证", () => {
     });
   });
 
-  it("每个维度恰好2道题", () => {
+  it("每个维度恰好3道题", () => {
     const dimCounts: Record<string, number> = {};
     DIMENSIONS.forEach((d) => { dimCounts[d.code] = 0; });
     questions.forEach((q) => { dimCounts[q.dim] = (dimCounts[q.dim] || 0) + 1; });
     
     DIMENSIONS.forEach((d) => {
-      expect(dimCounts[d.code]).toBe(2);
+      expect(dimCounts[d.code]).toBe(3);
     });
   });
 
@@ -401,7 +416,9 @@ describe("types: 类型系统约束", () => {
   });
 
   it("ALGO_PARAMS 关键参数合理", () => {
-    expect(ALGO_PARAMS.questionsPerDim).toBe(2);
+    expect(ALGO_PARAMS.questionsPerDim).toBe(3);
+    expect(ALGO_PARAMS.minTotal).toBe(3);
+    expect(ALGO_PARAMS.maxTotal).toBe(9);
     expect(ALGO_PARAMS.delta).toBeGreaterThan(0);
     expect(ALGO_PARAMS.threshold).toBeGreaterThan(0);
     expect(ALGO_PARAMS.threshold).toBeLessThan(100);
@@ -413,14 +430,14 @@ describe("types: 类型系统约束", () => {
 // ============================================================
 describe("端到端匹配场景", () => {
   it("全选最低分(1) → 可完成匹配", () => {
-    const scores = new Array(15).fill(2); // 2题×1分=2
+    const scores = new Array(15).fill(3); // 3题×1分=3
     const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
     expect(result.top3).toHaveLength(3);
   });
 
   it("全选最高分(3) → 可完成匹配", () => {
-    const scores = new Array(15).fill(6); // 2题×3分=6
+    const scores = new Array(15).fill(9); // 3题×3分=9
     const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
     expect(result.top3).toHaveLength(3);
@@ -429,7 +446,7 @@ describe("端到端匹配场景", () => {
   it("极端偏科 → 可完成匹配", () => {
     // 只有A1维度最高，其他最低
     const scores = new Array(15).fill(0);
-    scores[0] = 6;
+    scores[0] = 9;
     const result = runMatch(scores);
     expect(result.top.code).toBeTruthy();
   });

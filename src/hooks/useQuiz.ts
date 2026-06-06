@@ -4,13 +4,14 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { matchPersonality, scoresToGrades, type MatchInput } from "@/lib/match-engine";
 import { loadProgress, saveProgress, clearProgress, saveResult } from "@/lib/storage";
 import type { FullResult, Grade } from "@/lib/types";
-import { DIMENSIONS } from "@/lib/types";
+import { DIMENSIONS, type DimCode } from "@/lib/types";
 import { useI18n } from "@/lib/i18n/context";
 
 const DIM_COUNT = 15;
-const Q_PER_DIM = 2;
-const TOTAL_REGULAR = DIM_COUNT * Q_PER_DIM; // 30
 const GATE_INSERT_POS = 19;
+const DIM_INDEX_BY_CODE = Object.fromEntries(
+  DIMENSIONS.map((dim, index) => [dim.code, index])
+) as Record<DimCode, number>;
 
 export type Screen = "welcome" | "test" | "calculating" | "result" | "loading";
 
@@ -23,7 +24,7 @@ export interface QuestionItem {
 }
 
 interface ApiQuestion {
-  dimCode: string;
+  dimCode: DimCode;
   text: string;
   order: number;
   isGate: boolean;
@@ -47,6 +48,19 @@ interface ApiData {
 
 type TriggerKind = "none" | "cmpl" | "unit13" | "rei";
 
+const TRIGGER_CODE_BY_KIND: Record<Exclude<TriggerKind, "none">, string> = {
+  cmpl: "CMPL",
+  unit13: "U13G",
+  rei: "REI0",
+};
+
+function findTriggerQuestion(apiData: ApiData, triggerKind: Exclude<TriggerKind, "none">) {
+  const triggerCode = TRIGGER_CODE_BY_KIND[triggerKind];
+  return apiData.triggerQuestions.find((q) =>
+    q.options.some((o) => o.trigger === triggerCode)
+  );
+}
+
 function buildQuestionList(
   apiData: ApiData,
   triggerKind: TriggerKind,
@@ -54,7 +68,7 @@ function buildQuestionList(
   const list: QuestionItem[] = [];
   const regularQs = apiData.questions;
 
-  for (let i = 0; i < TOTAL_REGULAR; i++) {
+  for (let i = 0; i < regularQs.length; i++) {
     if (i === GATE_INSERT_POS && apiData.gateQuestion) {
       const gq = apiData.gateQuestion;
       list.push({
@@ -69,7 +83,8 @@ function buildQuestionList(
 
     const q = regularQs[i];
     if (!q) continue;
-    const dimIdx = Math.floor(i / Q_PER_DIM);
+    const dimIdx = DIM_INDEX_BY_CODE[q.dimCode];
+    if (dimIdx === undefined) continue;
 
     list.push({
       type: "regular",
@@ -80,28 +95,9 @@ function buildQuestionList(
     });
   }
 
-  if (triggerKind === "cmpl" && apiData.triggerQuestions[0]) {
-    const tq = apiData.triggerQuestions[0];
-    list.push({
-      type: "trigger",
-      text: tq.text,
-      options: tq.options.map((o) => ({
-        label: o.label,
-        trigger: o.trigger ?? undefined,
-      })),
-    });
-  } else if (triggerKind === "unit13" && apiData.triggerQuestions[1]) {
-    const tq = apiData.triggerQuestions[1];
-    list.push({
-      type: "trigger",
-      text: tq.text,
-      options: tq.options.map((o) => ({
-        label: o.label,
-        trigger: o.trigger ?? undefined,
-      })),
-    });
-  } else if (triggerKind === "rei" && apiData.triggerQuestions[2]) {
-    const tq = apiData.triggerQuestions[2];
+  if (triggerKind !== "none") {
+    const tq = findTriggerQuestion(apiData, triggerKind);
+    if (!tq) return list;
     list.push({
       type: "trigger",
       text: tq.text,
@@ -131,13 +127,18 @@ export function useQuiz() {
   const [qList, setQList] = useState<QuestionItem[]>([]);
 
   const stateRef = useRef({ currentQ, qList, dimScores, gateValue, triggerValue });
-  stateRef.current = { currentQ, qList, dimScores, gateValue, triggerValue };
-
   const screenRef = useRef<Screen>(screen);
-  screenRef.current = screen;
 
   // Fetch quiz data from API — re-fetch on language change if still on welcome
   const langRef = useRef(lang);
+
+  useEffect(() => {
+    stateRef.current = { currentQ, qList, dimScores, gateValue, triggerValue };
+  }, [currentQ, qList, dimScores, gateValue, triggerValue]);
+
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
   useEffect(() => {
     const langChanged = langRef.current !== lang;
     langRef.current = lang;
@@ -199,7 +200,7 @@ export function useQuiz() {
     if (!q) return;
 
     const opt = q.options[optionIdx];
-    let newScores = [...dimScores];
+    const newScores = [...dimScores];
     let newGate = gateValue;
     let newTrigger = triggerValue;
     let newList = qList;
@@ -240,7 +241,7 @@ export function useQuiz() {
         const r = matchPersonality(finalScores, newGate, newTrigger, matchInput);
         setResult(r);
         setScreen("result");
-        saveResult(r.top.code);
+        saveResult(r);
         clearProgress();
 
         fetch("/api/results", {

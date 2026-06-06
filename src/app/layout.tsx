@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Serif_SC, Share_Tech_Mono, Teko } from "next/font/google";
+import { Noto_Serif_SC, Share_Tech_Mono, Teko, JetBrains_Mono } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import "./globals.css";
 
@@ -19,6 +19,12 @@ const teko = Teko({
   variable: "--font-num",
   subsets: ["latin"],
   weight: ["500", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 const title = "EVA 驾驶员适格测试 | NERV-HQ";
@@ -66,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${notoSerif.variable} ${shareTechMono.variable} ${teko.variable} h-dvh antialiased`}
+      className={`${notoSerif.variable} ${shareTechMono.variable} ${teko.variable} ${jetbrainsMono.variable} h-dvh antialiased`}
       suppressHydrationWarning
     >
       <head>

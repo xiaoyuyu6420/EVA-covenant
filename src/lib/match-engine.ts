@@ -99,13 +99,19 @@ export function matchPersonality(
   const userGrades = scoresToGrades(scores);
   const { delta, threshold } = ALGO_PARAMS;
 
-  // ① 检查特殊触发 — 需要门控+触发+分数门槛三重条件
+  // ① 检查特殊触发 — 需要门控+触发+相对维度结构三重条件
   if (gateValue === "complement" && triggerValue === "CMPL") {
-    // CMPL需要：C1共情力≥5（高共情）且 A3 AT力场≤4（低边界）
+    // CMPL 应该是稀有结果：高共情 + 高孤独牵引 + 低边界，而不是只要选择补完路线就触发。
     const empathy = scores[6]; // C1
+    const loneliness = scores[7]; // C2
     const atField = scores[2]; // A3
-    if (empathy >= 5 && atField <= 4) {
-      const cmpl = specialTypes.find((s) => s.code === "CMPL")!;
+    const hasHighEmpathy = GRADE_VALUES[userGrades[6]] >= GRADE_VALUES.H && empathy >= atField + 2;
+    const hasHighLonelinessPull = GRADE_VALUES[userGrades[7]] >= GRADE_VALUES.H && loneliness >= atField + 1;
+    const hasLowBoundary = userGrades[2] === "L";
+
+    if (hasHighEmpathy && hasHighLonelinessPull && hasLowBoundary) {
+      const cmpl = specialTypes.find((s) => s.code === "CMPL");
+      if (!cmpl) return matchPersonality(scores, undefined, undefined, matchData);
       const result: MatchResult = {
         code: cmpl.code, name: cmpl.name, slogan: cmpl.slogan,
         desc: cmpl.desc, similarity: 100, isSpecial: true,
@@ -124,7 +130,8 @@ export function matchPersonality(
     const syncRate = scores[0]; // A1
     const existential = scores[11]; // D3
     if (syncRate >= 5 && existential >= 5) {
-      const u13g = specialTypes.find((s) => s.code === "U13G")!;
+      const u13g = specialTypes.find((s) => s.code === "U13G");
+      if (!u13g) return matchPersonality(scores, undefined, undefined, matchData);
       const result: MatchResult = {
         code: u13g.code, name: u13g.name, slogan: u13g.slogan,
         desc: u13g.desc, similarity: 100, isSpecial: true,
@@ -207,8 +214,8 @@ export function matchPersonality(
   const estimatedTotal = personalityTypes.length; // 22
 
   // 基于用户总分做确定性估算：总分越高排名越靠前
-  const totalScore = scores.reduce((a, b) => a + b, 0);
-  const maxScore = scores.length * 6; // 每维度最高6分（2题×3分）
+  const totalScore = userGrades.reduce((sum, grade) => sum + GRADE_VALUES[grade], 0);
+  const maxScore = userGrades.length * 3;
   const estimatedRank = Math.max(1, Math.min(estimatedTotal,
     Math.round(((maxScore - totalScore) / maxScore) * estimatedTotal * 0.8) + 1
   ));

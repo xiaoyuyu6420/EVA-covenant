@@ -14,6 +14,7 @@ interface Props {
   dimScores: number[];
   userGrades: Grade[] | null;
   relaySourceCode?: string;
+  relaySourceUnit?: string;
   relayRootCode?: string;
   relayDepth?: number;
 }
@@ -739,6 +740,7 @@ export default function ResultScreen({
   dimScores,
   userGrades,
   relaySourceCode,
+  relaySourceUnit,
   relayRootCode,
   relayDepth,
 }: Props) {
@@ -760,11 +762,12 @@ export default function ResultScreen({
   const currentRelayDepth = normalizeRelayDepth(relayDepth);
   const relayNodeLabel = currentRelayDepth.toString().padStart(2, "0");
   const upstreamLabel = relaySourceCode ?? "DIRECT";
+  const upstreamUnitLabel = relaySourceUnit ?? "上一站机体未记录";
   const relayPrompt = relaySourceCode
     ? "继续转给一个和你风格不同的人，让下一站接在你的编队后面。"
     : "发给一个和你风格不同的人，让 TA 接出下一站。";
   const relayLine = relaySourceCode
-    ? `我接入了 ${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
+    ? `我接入了 ${relaySourceUnit ? `${relaySourceUnit} / ` : ""}${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
     : "";
   const relayRelation = getRelayRelation(formationCode, relaySourceCode);
   const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
@@ -872,11 +875,12 @@ export default function ResultScreen({
   const returnText = relayRelation
     ? [
       `我接完你的 EVA 编队了：${relaySourceCode} -> ${formationCode}`,
+      relaySourceUnit ? `上一站：${relaySourceUnit}` : "",
       `我的结果：${profile.displayName} / NODE ${relayNodeLabel}`,
       `编队关系：${relayRelation.label}。${relayRelation.dimensionNote}。`,
       relayRelation.description,
       "你可以再找一个和我们都不太一样的人接下一站。",
-    ].join("\n")
+    ].filter(Boolean).join("\n")
     : "";
 
   const themeStyle = {
@@ -897,6 +901,7 @@ export default function ResultScreen({
       shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
+      sourceShareUnit: relaySourceUnit,
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation?.label,
@@ -913,6 +918,7 @@ export default function ResultScreen({
         shareUnit: profile.displayName,
         formationCode,
         relayFrom: relaySourceCode,
+        sourceShareUnit: relaySourceUnit,
         relayRoot: effectiveRelayRootCode,
         relayDepth: currentRelayDepth,
         relayRelation: relayRelation?.label,
@@ -932,6 +938,7 @@ export default function ResultScreen({
           shareUnit: profile.displayName,
           formationCode,
           relayFrom: relaySourceCode,
+          sourceShareUnit: relaySourceUnit,
           relayRoot: effectiveRelayRootCode,
           relayDepth: currentRelayDepth,
           relayRelation: relayRelation?.label,
@@ -948,6 +955,7 @@ export default function ResultScreen({
           shareUnit: profile.displayName,
           formationCode,
           relayFrom: relaySourceCode,
+          sourceShareUnit: relaySourceUnit,
           relayRoot: effectiveRelayRootCode,
           relayDepth: currentRelayDepth,
           relayRelation: relayRelation?.label,
@@ -972,6 +980,7 @@ export default function ResultScreen({
       shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
+      sourceShareUnit: relaySourceUnit,
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation?.label,
@@ -1033,6 +1042,7 @@ export default function ResultScreen({
       shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
+      sourceShareUnit: relaySourceUnit,
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation.label,
@@ -1049,6 +1059,7 @@ export default function ResultScreen({
         shareUnit: profile.displayName,
         formationCode,
         relayFrom: relaySourceCode,
+        sourceShareUnit: relaySourceUnit,
         relayRoot: effectiveRelayRootCode,
         relayDepth: currentRelayDepth,
         relayRelation: relayRelation.label,
@@ -1300,6 +1311,11 @@ export default function ResultScreen({
               >
                 {upstreamLabel}
               </p>
+              {relaySourceUnit && (
+                <p className="mt-1 text-[0.72rem] leading-[1.35] text-[#aaa] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                  {relaySourceUnit}
+                </p>
+              )}
             </div>
           </div>
 
@@ -1364,6 +1380,9 @@ export default function ResultScreen({
                 </p>
                 <p className="mt-1 text-[0.78rem] leading-[1.35] break-all" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
                   {relayRelation.upstreamLabel}
+                </p>
+                <p className="mt-1 text-[0.72rem] leading-[1.35] text-[#aaa] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                  {upstreamUnitLabel}
                 </p>
               </div>
               <div

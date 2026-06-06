@@ -156,6 +156,7 @@ export default function HomeClient() {
             dimScores={dimScores}
             userGrades={userGrades}
             relaySourceCode={attribution.shareBy}
+            relaySourceUnit={attribution.shareUnit}
             relayRootCode={attribution.relayRoot ?? attribution.relayFrom}
             relayDepth={currentRelayDepth}
           />

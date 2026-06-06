@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, Copy, Trash2 } from "lucide-react";
+import { ArrowLeft, Share2, Trash2 } from "lucide-react";
 import { buildShareUrl, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
 import {
   buildFormationCode,
@@ -94,10 +94,10 @@ export default function HistoryClient() {
   const latestItem = items[0];
   const latestMeta = useMemo(() => latestItem ? getHistoryMeta(latestItem) : null, [latestItem]);
 
-  const copyRelay = async (item: HistoryItem) => {
+  const copyRelay = async (item: HistoryItem, channel = "history_copy") => {
     const meta = getHistoryMeta(item);
     trackEvent("share_click", {
-      channel: "history_copy",
+      channel,
       code: item.result.top.code,
       unit: meta.displayName,
       shareUnit: meta.displayName,
@@ -114,7 +114,7 @@ export default function HistoryClient() {
       setCopiedId(item.id);
       window.setTimeout(() => setCopiedId(null), 1600);
       trackEvent("share_success", {
-        channel: "history_copy",
+        channel,
         code: item.result.top.code,
         unit: meta.displayName,
         shareUnit: meta.displayName,
@@ -128,6 +128,51 @@ export default function HistoryClient() {
     } catch {
       setCopiedId(null);
     }
+  };
+
+  const shareRelay = async (item: HistoryItem) => {
+    const meta = getHistoryMeta(item);
+
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        trackEvent("share_click", {
+          channel: "history_native",
+          code: item.result.top.code,
+          unit: meta.displayName,
+          shareUnit: meta.displayName,
+          formationCode: meta.formationCode,
+          relayFrom: item.relaySourceCode,
+          relayRoot: meta.relayRoot,
+          relayDepth: meta.relayDepth,
+          inviteTarget: HISTORY_INVITE_TARGET,
+          inviteLabel: HISTORY_INVITE_LABEL,
+        });
+        await navigator.share({
+          title: `EVA 编队接力：${meta.displayName}`,
+          text: meta.shareText,
+          url: meta.shareUrl || undefined,
+        });
+        setCopiedId(item.id);
+        window.setTimeout(() => setCopiedId(null), 1600);
+        trackEvent("share_success", {
+          channel: "history_native",
+          code: item.result.top.code,
+          unit: meta.displayName,
+          shareUnit: meta.displayName,
+          formationCode: meta.formationCode,
+          relayFrom: item.relaySourceCode,
+          relayRoot: meta.relayRoot,
+          relayDepth: meta.relayDepth,
+          inviteTarget: HISTORY_INVITE_TARGET,
+          inviteLabel: HISTORY_INVITE_LABEL,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    await copyRelay(item, "history_fallback");
   };
 
   const deleteItem = (id: string) => {
@@ -246,15 +291,15 @@ export default function HistoryClient() {
                     <div className="mt-3 grid grid-cols-1 min-[430px]:grid-cols-[1fr_auto] gap-3 min-[430px]:items-end">
                       <p className="text-[0.82rem] leading-[1.65] text-[#aaa]" style={{ fontFamily: "var(--font-title)" }}>
                         {meta.dimensionLabels ? `高位指标：${meta.dimensionLabels}` : "高位指标：SYNC"}
-                        <span className="block mt-1 text-[#777]">复制后可继续邀请下一站接入。</span>
+                        <span className="block mt-1 text-[#777]">继续邀请下一站接入。</span>
                       </p>
                       <button
-                        onClick={() => copyRelay(item)}
+                        onClick={() => shareRelay(item)}
                         className="h-10 px-3 border border-[var(--eva-green)] text-[var(--eva-green)] text-[0.66rem] tracking-[0.14em] flex items-center justify-center gap-1.5 transition-colors"
                         style={{ fontFamily: "var(--font-tech)" }}
                       >
-                        <Copy size={13} aria-hidden="true" />
-                        {copiedId === item.id ? "COPIED" : "COPY RELAY"}
+                        <Share2 size={13} aria-hidden="true" />
+                        {copiedId === item.id ? "READY" : "SEND RELAY"}
                       </button>
                     </div>
                   </article>

@@ -47,6 +47,51 @@ function toRate(numerator: number, denominator: number) {
   return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
 }
 
+type ConversionStat = {
+  label: string;
+  relayEntries: number;
+  starts: number;
+  completes: number;
+  reshares: number;
+};
+
+function createConversionStat(label: string): ConversionStat {
+  return {
+    label,
+    relayEntries: 0,
+    starts: 0,
+    completes: 0,
+    reshares: 0,
+  };
+}
+
+function incrementConversionStat(stat: ConversionStat, event: string) {
+  if (event === "relay_entry") stat.relayEntries++;
+  if (event === "quiz_start") stat.starts++;
+  if (event === "quiz_complete") stat.completes++;
+  if (event === "share_success") stat.reshares++;
+}
+
+function toConversionRows(map: Map<string, ConversionStat>) {
+  return Array.from(map.entries())
+    .map(([key, value]) => ({
+      key,
+      label: value.label,
+      relayEntries: value.relayEntries,
+      starts: value.starts,
+      completes: value.completes,
+      reshares: value.reshares,
+      completionRate: toRate(value.completes, value.starts),
+      reshareRate: toRate(value.reshares, value.completes),
+    }))
+    .sort((a, b) =>
+      b.completes - a.completes ||
+      b.starts - a.starts ||
+      b.relayEntries - a.relayEntries ||
+      b.reshares - a.reshares
+    );
+}
+
 export async function GET() {
   // 来源渠道统计
   const utmStats = await prisma.testRecord.groupBy({
@@ -166,32 +211,25 @@ export async function GET() {
     },
   });
 
-  const inviteConversionMap = new Map<string, {
-    label: string;
-    relayEntries: number;
-    starts: number;
-    completes: number;
-    reshares: number;
-  }>();
+  const inviteConversionMap = new Map<string, ConversionStat>();
+  const sourceUnitConversionMap = new Map<string, ConversionStat>();
 
   for (const event of inviteConversionEvents) {
     const meta = parseMeta(event.meta);
     const target = getMetaString(meta, "sourceInviteTarget");
-    if (!target) continue;
+    if (target) {
+      const current = inviteConversionMap.get(target) ?? createConversionStat(getMetaString(meta, "sourceInviteLabel") ?? target);
+      current.label = getMetaString(meta, "sourceInviteLabel") ?? current.label;
+      incrementConversionStat(current, event.event);
+      inviteConversionMap.set(target, current);
+    }
 
-    const current = inviteConversionMap.get(target) ?? {
-      label: getMetaString(meta, "sourceInviteLabel") ?? target,
-      relayEntries: 0,
-      starts: 0,
-      completes: 0,
-      reshares: 0,
-    };
-    current.label = getMetaString(meta, "sourceInviteLabel") ?? current.label;
-    if (event.event === "relay_entry") current.relayEntries++;
-    if (event.event === "quiz_start") current.starts++;
-    if (event.event === "quiz_complete") current.completes++;
-    if (event.event === "share_success") current.reshares++;
-    inviteConversionMap.set(target, current);
+    const sourceUnit = getMetaString(meta, "sourceShareUnit");
+    if (sourceUnit) {
+      const current = sourceUnitConversionMap.get(sourceUnit) ?? createConversionStat(sourceUnit);
+      incrementConversionStat(current, event.event);
+      sourceUnitConversionMap.set(sourceUnit, current);
+    }
   }
 
   // 最近记录
@@ -236,23 +274,26 @@ export async function GET() {
         successRate: value.clicks > 0 ? Math.round((value.successes / value.clicks) * 1000) / 10 : null,
       }))
       .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks),
-    inviteConversionStats: Array.from(inviteConversionMap.entries())
-      .map(([target, value]) => ({
-        target,
-        label: value.label,
-        relayEntries: value.relayEntries,
-        starts: value.starts,
-        completes: value.completes,
-        reshares: value.reshares,
-        completionRate: toRate(value.completes, value.starts),
-        reshareRate: toRate(value.reshares, value.completes),
-      }))
-      .sort((a, b) =>
-        b.completes - a.completes ||
-        b.starts - a.starts ||
-        b.relayEntries - a.relayEntries ||
-        b.reshares - a.reshares
-      ),
+    inviteConversionStats: toConversionRows(inviteConversionMap).map((item) => ({
+      target: item.key,
+      label: item.label,
+      relayEntries: item.relayEntries,
+      starts: item.starts,
+      completes: item.completes,
+      reshares: item.reshares,
+      completionRate: item.completionRate,
+      reshareRate: item.reshareRate,
+    })),
+    sourceUnitConversionStats: toConversionRows(sourceUnitConversionMap).map((item) => ({
+      unit: item.key,
+      label: item.label,
+      relayEntries: item.relayEntries,
+      starts: item.starts,
+      completes: item.completes,
+      reshares: item.reshares,
+      completionRate: item.completionRate,
+      reshareRate: item.reshareRate,
+    })),
     relayRelationStats: toShareStatRows(relayRelationMap).map((item) => ({
       relation: item.key,
       clicks: item.clicks,

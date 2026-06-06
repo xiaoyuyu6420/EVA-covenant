@@ -7,9 +7,26 @@ import LangSelector from "./LangSelector";
 
 interface Props {
   onStart: () => void;
+  inviteCode?: string;
+  relayFrom?: string;
 }
 
-export default function WelcomeScreen({ onStart }: Props) {
+type NavigatorWithStandalone = Navigator & {
+  standalone?: boolean;
+};
+
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+function requestDocumentFullscreen() {
+  const el = document.documentElement as FullscreenElement;
+  const requestFullscreen = el.requestFullscreen ?? el.webkitRequestFullscreen;
+  if (!requestFullscreen) return;
+  return requestFullscreen.call(el);
+}
+
+export default function WelcomeScreen({ onStart, inviteCode, relayFrom }: Props) {
   const [bootPhase, setBootPhase] = useState(0);
   const [pilotCount, setPilotCount] = useState<number | null>(null);
   const [showFSModal, setShowFSModal] = useState(false);
@@ -25,7 +42,8 @@ export default function WelcomeScreen({ onStart }: Props) {
 
   useEffect(() => {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as NavigatorWithStandalone).standalone === true;
     if (isMobile && !isStandalone && !document.fullscreenElement) {
       const timer = setTimeout(() => setShowFSModal(true), 1500);
       return () => clearTimeout(timer);
@@ -55,9 +73,7 @@ export default function WelcomeScreen({ onStart }: Props) {
           <button
             onClick={() => {
               if (!document.fullscreenElement) {
-                const el = document.documentElement;
-                const req = el.requestFullscreen || (el as any).webkitRequestFullscreen;
-                if (req) req.call(el).catch(() => {});
+                void Promise.resolve(requestDocumentFullscreen()).catch(() => {});
               }
             }}
             className="text-[0.75rem] text-[#555] hover:text-[var(--nerv-orange)] transition-colors cursor-pointer"
@@ -106,6 +122,46 @@ export default function WelcomeScreen({ onStart }: Props) {
           ))}
         </p>
       </motion.div>
+
+      {inviteCode && (
+        <motion.div
+          className="mb-6 border border-[var(--nerv-orange)]/60 bg-[rgba(242,116,5,0.08)] p-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={bootPhase >= 3 ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.45, delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <span
+              className="text-[0.68rem] tracking-[0.22em] text-[var(--nerv-orange)]"
+              style={{ fontFamily: "var(--font-tech)" }}
+            >
+              {t("welcome.relayTitle")}
+            </span>
+            <span
+              className="text-[0.62rem] tracking-[0.16em] text-[#666]"
+              style={{ fontFamily: "var(--font-tech)" }}
+            >
+              {t("welcome.relayStatus")}
+            </span>
+          </div>
+          <div className="border border-white/10 bg-black/25 px-3 py-2 mb-3">
+            <p
+              className="text-[1rem] leading-[1.25] break-all"
+              style={{ color: "var(--eva-green)", fontFamily: "var(--font-tech)" }}
+            >
+              {inviteCode}
+            </p>
+          </div>
+          <p className="text-[0.92rem] leading-[1.7] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+            {t("welcome.relayDesc")}
+          </p>
+          {relayFrom && (
+            <p className="mt-2 text-[0.68rem] tracking-[0.14em] text-[#777]" style={{ fontFamily: "var(--font-tech)" }}>
+              {t("welcome.relayUpstream")} {relayFrom}
+            </p>
+          )}
+        </motion.div>
+      )}
 
       {/* Pilot count — EVA themed */}
       {pilotCount !== null && pilotCount > 0 && (
@@ -156,7 +212,7 @@ export default function WelcomeScreen({ onStart }: Props) {
         transition={{ duration: 0.6, delay: 0.2 }}
         whileTap={{ scale: 0.97 }}
       >
-        <span className="relative z-10">{t("welcome.btn")}</span>
+        <span className="relative z-10">{inviteCode ? t("welcome.relayBtn") : t("welcome.btn")}</span>
       </motion.button>
 
       {/* History button */}
@@ -208,9 +264,7 @@ export default function WelcomeScreen({ onStart }: Props) {
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  const el = document.documentElement;
-                  const req = el.requestFullscreen || (el as any).webkitRequestFullscreen;
-                  if (req) req.call(el).catch(() => {});
+                  void Promise.resolve(requestDocumentFullscreen()).catch(() => {});
                   setShowFSModal(false);
                 }}
                 className="flex-1 py-2.5 text-center text-[0.85rem] font-bold tracking-[2px] cursor-pointer border border-[var(--eva-green)] text-[var(--eva-green)] bg-transparent uppercase transition-colors eva-btn"

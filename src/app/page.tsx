@@ -1,11 +1,33 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { useQuiz } from "@/hooks/useQuiz";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import TestScreen from "@/components/TestScreen";
 import ResultScreen from "@/components/ResultScreen";
-import { trackEvent } from "@/lib/analytics";
+import { getAttribution, trackEvent, type AttributionContext } from "@/lib/analytics";
+
+const EMPTY_ATTRIBUTION: AttributionContext = {};
+let attributionCacheKey = "";
+let attributionCache = EMPTY_ATTRIBUTION;
+
+function subscribeAttribution() {
+  return () => {};
+}
+
+function getAttributionSnapshot() {
+  if (typeof window === "undefined") return EMPTY_ATTRIBUTION;
+  const cacheKey = window.location.href;
+  if (cacheKey !== attributionCacheKey) {
+    attributionCacheKey = cacheKey;
+    attributionCache = getAttribution();
+  }
+  return attributionCache;
+}
+
+function getServerAttributionSnapshot() {
+  return EMPTY_ATTRIBUTION;
+}
 
 export default function Home() {
   const {
@@ -13,6 +35,12 @@ export default function Home() {
     startTest, handleAnswer, restart,
   } = useQuiz();
   const trackedResultCode = useRef<string | null>(null);
+  const trackedRelayCode = useRef<string | null>(null);
+  const attribution = useSyncExternalStore(
+    subscribeAttribution,
+    getAttributionSnapshot,
+    getServerAttributionSnapshot
+  );
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (screen !== "test") return;
@@ -30,7 +58,17 @@ export default function Home() {
   }, [handleKeyDown]);
 
   useEffect(() => {
+    const currentAttribution = getAttribution();
     trackEvent("page_view");
+
+    if (currentAttribution.shareBy && trackedRelayCode.current !== currentAttribution.shareBy) {
+      trackedRelayCode.current = currentAttribution.shareBy;
+      trackEvent("relay_entry", {
+        formationCode: currentAttribution.shareBy,
+        relayFrom: currentAttribution.relayFrom,
+        relayRoot: currentAttribution.relayRoot,
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -66,7 +104,13 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden pt-3 pb-4"
         style={{ scrollbarWidth: "none" }}
       >
-        {screen === "welcome" && <WelcomeScreen onStart={handleStartTest} />}
+        {screen === "welcome" && (
+          <WelcomeScreen
+            onStart={handleStartTest}
+            inviteCode={attribution.shareBy}
+            relayFrom={attribution.relayFrom}
+          />
+        )}
         {screen === "loading" && (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-[var(--nerv-orange)] border-t-transparent rounded-full animate-spin" />
@@ -88,6 +132,8 @@ export default function Home() {
             onRestart={restart}
             dimScores={dimScores}
             userGrades={userGrades}
+            relaySourceCode={attribution.shareBy}
+            relayRootCode={attribution.relayRoot ?? attribution.relayFrom}
           />
         )}
         {screen === "calculating" && (

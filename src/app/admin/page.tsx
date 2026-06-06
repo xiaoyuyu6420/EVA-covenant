@@ -77,6 +77,7 @@ interface Analytics {
     utmSource: string | null; sessionId: string | null;
     code: string | null; unit: string | null; channel: string | null;
     formationCode: string | null; shareBy: string | null;
+    relayFrom: string | null; relayRoot: string | null;
     createdAt: string;
   }[];
   recentRecords: {
@@ -88,13 +89,14 @@ interface Analytics {
 
 const EVENT_LABELS: Record<string, string> = {
   page_view: "访问",
+  relay_entry: "接力进入",
   quiz_start: "开始",
   quiz_complete: "完成",
   share_click: "点击分享",
   share_success: "分享成功",
 };
 
-const FUNNEL_EVENTS = ["page_view", "quiz_start", "quiz_complete", "share_click", "share_success"];
+const FUNNEL_EVENTS = ["page_view", "relay_entry", "quiz_start", "quiz_complete", "share_click", "share_success"];
 
 function sourceLabel(source: string | null) {
   return source ?? "直接";
@@ -360,7 +362,14 @@ function RecordsPanel() {
                   <td className="py-2 px-3 text-[#e2e8f0]">{EVENT_LABELS[event.event] ?? event.event}</td>
                   <td className="py-2 px-3 text-[#94a3b8]">{event.unit ?? event.code ?? "—"}</td>
                   <td className="py-2 px-3 eva-text text-[#64748b]">{event.channel ?? "—"}</td>
-                  <td className="py-2 px-3 eva-text text-[#4ade80]">{event.formationCode ?? event.shareBy ?? "—"}</td>
+                  <td className="py-2 px-3 eva-text text-[#4ade80]">
+                    <span>{event.formationCode ?? event.shareBy ?? "—"}</span>
+                    {(event.relayFrom || event.relayRoot) && (
+                      <span className="block text-[10px] text-[#64748b]">
+                        FROM {event.relayFrom ?? "—"} / ROOT {event.relayRoot ?? "—"}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 px-3 eva-text text-[#64748b]">{sourceLabel(event.utmSource)}</td>
                   <td className="py-2 px-3 eva-text text-[#64748b] text-xs">
                     {new Date(event.createdAt).toLocaleString("zh-CN")}

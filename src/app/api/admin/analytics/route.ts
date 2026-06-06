@@ -100,6 +100,8 @@ export async function GET() {
         channel: typeof meta.channel === "string" ? meta.channel : null,
         formationCode: typeof meta.formationCode === "string" ? meta.formationCode : null,
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
+        relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
+        relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,
         createdAt: e.createdAt,
       };
     }),

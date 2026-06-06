@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 const ALLOWED_EVENTS = new Set([
   "page_view",
+  "relay_entry",
   "quiz_start",
   "quiz_complete",
   "share_click",

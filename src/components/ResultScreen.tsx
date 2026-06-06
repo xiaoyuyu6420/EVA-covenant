@@ -12,6 +12,8 @@ interface Props {
   onRestart: () => void;
   dimScores: number[];
   userGrades: Grade[] | null;
+  relaySourceCode?: string;
+  relayRootCode?: string;
 }
 
 type Theme = {
@@ -604,7 +606,14 @@ function getProfile(match: MatchResult): ResultProfile {
   };
 }
 
-export default function ResultScreen({ result, onRestart, dimScores, userGrades }: Props) {
+export default function ResultScreen({
+  result,
+  onRestart,
+  dimScores,
+  userGrades,
+  relaySourceCode,
+  relayRootCode,
+}: Props) {
   const [copied, setCopied] = useState(false);
   const top = result.top;
   const profile = getProfile(top);
@@ -633,10 +642,15 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
     ? DIMENSION_CHAIN_PROMPTS[primaryDimension.index]
     : "让一个和你差异很大的人测一次，结果最容易拉开。";
   const formationCode = `${profile.marker}-${top.code}-${topDimensionCodes || "SYNC"}`.replace(/\s+/g, "").toUpperCase();
-  const shareUrl = buildShareUrl(formationCode);
+  const effectiveRelayRootCode = relayRootCode ?? relaySourceCode;
+  const relayLine = relaySourceCode
+    ? `我接入了 ${relaySourceCode} 的编队，现在回传自己的结果。`
+    : "";
+  const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode);
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
+    relayLine,
     `编队码：${formationCode}`,
     topDimensionLabels ? `高位指标：${topDimensionLabels}` : "",
     invitePrompt,
@@ -660,6 +674,8 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
       code: top.code,
       unit: profile.displayName,
       formationCode,
+      relayFrom: relaySourceCode,
+      relayRoot: effectiveRelayRootCode,
     });
 
     try {
@@ -671,6 +687,8 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
         code: top.code,
         unit: profile.displayName,
         formationCode,
+        relayFrom: relaySourceCode,
+        relayRoot: effectiveRelayRootCode,
       });
     } catch {
       setCopied(false);
@@ -685,6 +703,8 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
           code: top.code,
           unit: profile.displayName,
           formationCode,
+          relayFrom: relaySourceCode,
+          relayRoot: effectiveRelayRootCode,
         });
         await navigator.share({
           title: "EVA 适格机体测试",
@@ -696,6 +716,8 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
           code: top.code,
           unit: profile.displayName,
           formationCode,
+          relayFrom: relaySourceCode,
+          relayRoot: effectiveRelayRootCode,
         });
         return;
       } catch (error) {

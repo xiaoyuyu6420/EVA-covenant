@@ -756,10 +756,18 @@ export default function ResultScreen({
   const relayLine = relaySourceCode
     ? `我接入了 ${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
     : "";
-  const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth);
   const relayRelation = getRelayRelation(formationCode, relaySourceCode);
+  const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+    relayRelation: relayRelation?.label,
+  });
   const primaryDimensionCode = primaryDimension ? DIMENSIONS[primaryDimension.index].code : "CORE";
   const primaryDimensionName = primaryDimension ? DIMENSIONS[primaryDimension.index].name : "核心指标";
+  const buildInviteShareUrl = (inviteTarget: RelayInviteKey, inviteLabel: string) =>
+    buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+      inviteTarget,
+      inviteLabel,
+      relayRelation: relayRelation?.label,
+    });
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
@@ -782,7 +790,7 @@ export default function ResultScreen({
       message: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
         "你测完把机体和编队码发我，看看你会接到哪一站：",
-        shareUrl,
+        buildInviteShareUrl("general", "下一站"),
       ].join("\n"),
     },
     {
@@ -795,7 +803,7 @@ export default function ResultScreen({
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
         "想找一个反差位接下一站：你测完把机体和编队码发我。",
         "看我们是同轴、分支，还是完全反差：",
-        shareUrl,
+        buildInviteShareUrl("contrast", "反差位"),
       ].join("\n"),
     },
     {
@@ -807,7 +815,7 @@ export default function ResultScreen({
       message: [
         `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
         "你可能和我有同一个轴，测完把机体和编队码发我对一下：",
-        shareUrl,
+        buildInviteShareUrl("same_axis", "同轴位"),
       ].join("\n"),
     },
     {
@@ -819,7 +827,7 @@ export default function ResultScreen({
       message: [
         `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
         "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下：",
-        shareUrl,
+        buildInviteShareUrl("verify", "校验位"),
       ].join("\n"),
     },
   ];

@@ -75,6 +75,16 @@ interface Analytics {
   relayDepthStats: { depth: number; count: number }[];
   shareChannelStats: { channel: string; clicks: number; successes: number; successRate: number | null }[];
   inviteTargetStats: { target: string; label: string; clicks: number; successes: number; successRate: number | null }[];
+  inviteConversionStats: {
+    target: string;
+    label: string;
+    relayEntries: number;
+    starts: number;
+    completes: number;
+    reshares: number;
+    completionRate: number | null;
+    reshareRate: number | null;
+  }[];
   relayRelationStats: { relation: string; clicks: number; successes: number; successRate: number | null }[];
   recentEvents: {
     id: number; event: string; page: string | null;
@@ -82,6 +92,7 @@ interface Analytics {
     code: string | null; unit: string | null; channel: string | null;
     formationCode: string | null; shareBy: string | null;
     inviteTarget: string | null; inviteLabel: string | null; relayRelation: string | null;
+    sourceInviteTarget: string | null; sourceInviteLabel: string | null; sourceRelayRelation: string | null;
     relayFrom: string | null; relayRoot: string | null;
     relayDepth: number | null; nextRelayDepth: number | null;
     createdAt: string;
@@ -286,6 +297,12 @@ function RecordsPanel() {
   const maxRelayDepthCount = Math.max(...data.relayDepthStats.map((item) => item.count), 1);
   const maxShareChannelClicks = Math.max(...data.shareChannelStats.map((item) => item.clicks), 1);
   const maxInviteTargetClicks = Math.max(...data.inviteTargetStats.map((item) => item.clicks), 1);
+  const maxInviteConversionCount = Math.max(...data.inviteConversionStats.flatMap((item) => [
+    item.relayEntries,
+    item.starts,
+    item.completes,
+    item.reshares,
+  ]), 1);
   const maxRelayRelationClicks = Math.max(...data.relayRelationStats.map((item) => item.clicks), 1);
 
   return (
@@ -469,6 +486,49 @@ function RecordsPanel() {
       </div>
 
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">INVITE CONVERSION — 邀请转化</h3>
+        <div className="space-y-3">
+          {data.inviteConversionStats.map((item) => (
+            <div key={item.target} className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs eva-text text-[#94a3b8]">{item.label}</span>
+                <span className="text-xs eva-text text-[#4ade80]">
+                  完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 再分享 {rateLabel(item.reshareRate)}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {([
+                  ["进入", item.relayEntries, "#38bdf8"],
+                  ["开始", item.starts, "#7c3aed"],
+                  ["完成", item.completes, "#4ade80"],
+                  ["再分享", item.reshares, "#f97316"],
+                ] as [string, number, string][]).map(([label, count, color]) => (
+                  <div key={label} className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] text-[#64748b]">{label}</span>
+                      <span className="text-[10px] eva-text text-[#e2e8f0]">{count}</span>
+                    </div>
+                    <div className="h-3 bg-[#1e1b2e] rounded overflow-hidden">
+                      <div
+                        className="h-full rounded"
+                        style={{
+                          backgroundColor: color,
+                          width: `${Math.max((count / maxInviteConversionCount) * 100, count > 0 ? 8 : 0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {data.inviteConversionStats.length === 0 && (
+            <p className="text-[#64748b] text-sm text-center py-4">暂无邀请转化数据</p>
+          )}
+        </div>
+      </div>
+
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
         <h3 className="nerv-label mb-4">RECENT SHARE EVENTS — 最近传播事件</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -490,9 +550,9 @@ function RecordsPanel() {
                   <td className="py-2 px-3 text-[#94a3b8]">{event.unit ?? event.code ?? "—"}</td>
                   <td className="py-2 px-3 eva-text text-[#64748b]">
                     {channelLabel(event.channel)}
-                    {(event.inviteLabel || event.relayRelation) && (
+                    {(event.inviteLabel || event.relayRelation || event.sourceInviteLabel || event.sourceRelayRelation) && (
                       <span className="block text-[10px] text-[#4ade80]">
-                        {event.inviteLabel ?? event.relayRelation}
+                        {event.inviteLabel ?? event.relayRelation ?? event.sourceInviteLabel ?? event.sourceRelayRelation}
                       </span>
                     )}
                   </td>

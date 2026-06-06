@@ -43,6 +43,10 @@ function toShareStatRows(map: Map<string, { clicks: number; successes: number }>
     .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks);
 }
 
+function toRate(numerator: number, denominator: number) {
+  return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
+}
+
 export async function GET() {
   // 来源渠道统计
   const utmStats = await prisma.testRecord.groupBy({
@@ -152,6 +156,44 @@ export async function GET() {
     }
   }
 
+  const inviteConversionEvents = await prisma.eventLog.findMany({
+    take: 1500,
+    orderBy: { createdAt: "desc" },
+    where: { event: { in: ["relay_entry", "quiz_start", "quiz_complete", "share_success"] } },
+    select: {
+      event: true,
+      meta: true,
+    },
+  });
+
+  const inviteConversionMap = new Map<string, {
+    label: string;
+    relayEntries: number;
+    starts: number;
+    completes: number;
+    reshares: number;
+  }>();
+
+  for (const event of inviteConversionEvents) {
+    const meta = parseMeta(event.meta);
+    const target = getMetaString(meta, "sourceInviteTarget");
+    if (!target) continue;
+
+    const current = inviteConversionMap.get(target) ?? {
+      label: getMetaString(meta, "sourceInviteLabel") ?? target,
+      relayEntries: 0,
+      starts: 0,
+      completes: 0,
+      reshares: 0,
+    };
+    current.label = getMetaString(meta, "sourceInviteLabel") ?? current.label;
+    if (event.event === "relay_entry") current.relayEntries++;
+    if (event.event === "quiz_start") current.starts++;
+    if (event.event === "quiz_complete") current.completes++;
+    if (event.event === "share_success") current.reshares++;
+    inviteConversionMap.set(target, current);
+  }
+
   // 最近记录
   const recentRecords = await prisma.testRecord.findMany({
     take: 20,
@@ -194,6 +236,23 @@ export async function GET() {
         successRate: value.clicks > 0 ? Math.round((value.successes / value.clicks) * 1000) / 10 : null,
       }))
       .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks),
+    inviteConversionStats: Array.from(inviteConversionMap.entries())
+      .map(([target, value]) => ({
+        target,
+        label: value.label,
+        relayEntries: value.relayEntries,
+        starts: value.starts,
+        completes: value.completes,
+        reshares: value.reshares,
+        completionRate: toRate(value.completes, value.starts),
+        reshareRate: toRate(value.reshares, value.completes),
+      }))
+      .sort((a, b) =>
+        b.completes - a.completes ||
+        b.starts - a.starts ||
+        b.relayEntries - a.relayEntries ||
+        b.reshares - a.reshares
+      ),
     relayRelationStats: toShareStatRows(relayRelationMap).map((item) => ({
       relation: item.key,
       clicks: item.clicks,
@@ -215,6 +274,9 @@ export async function GET() {
         inviteTarget: typeof meta.inviteTarget === "string" ? meta.inviteTarget : null,
         inviteLabel: typeof meta.inviteLabel === "string" ? meta.inviteLabel : null,
         relayRelation: typeof meta.relayRelation === "string" ? meta.relayRelation : null,
+        sourceInviteTarget: typeof meta.sourceInviteTarget === "string" ? meta.sourceInviteTarget : null,
+        sourceInviteLabel: typeof meta.sourceInviteLabel === "string" ? meta.sourceInviteLabel : null,
+        sourceRelayRelation: typeof meta.sourceRelayRelation === "string" ? meta.sourceRelayRelation : null,
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
         relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
         relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,

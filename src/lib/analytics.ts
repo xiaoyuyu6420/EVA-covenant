@@ -15,6 +15,15 @@ export type AttributionContext = {
   relayFrom?: string;
   relayRoot?: string;
   relayDepth?: number;
+  inviteTarget?: string;
+  inviteLabel?: string;
+  relayRelation?: string;
+};
+
+export type ShareUrlOptions = {
+  inviteTarget?: string;
+  inviteLabel?: string;
+  relayRelation?: string;
 };
 
 const SESSION_KEY = "eva-covenant-session";
@@ -57,6 +66,9 @@ export function getAttribution(): AttributionContext {
     relayFrom: getParam(params, "relay_from"),
     relayRoot: getParam(params, "relay_root"),
     relayDepth: getPositiveIntParam(params, "relay_depth"),
+    inviteTarget: getParam(params, "invite_target", 80),
+    inviteLabel: getParam(params, "invite_label", 80),
+    relayRelation: getParam(params, "relay_relation", 80),
   };
 }
 
@@ -65,7 +77,13 @@ export function normalizeRelayDepth(value?: number) {
   return Math.min(Math.max(Math.trunc(value), 1), 99);
 }
 
-export function buildShareUrl(shareBy: string, relayFrom?: string, relayRoot?: string, relayDepth?: number) {
+export function buildShareUrl(
+  shareBy: string,
+  relayFrom?: string,
+  relayRoot?: string,
+  relayDepth?: number,
+  options?: ShareUrlOptions
+) {
   if (typeof window === "undefined") return "";
 
   const upstream = relayFrom ?? getAttribution().shareBy;
@@ -79,6 +97,9 @@ export function buildShareUrl(shareBy: string, relayFrom?: string, relayRoot?: s
   url.searchParams.set("relay_depth", depth.toString());
   if (upstream && upstream !== shareBy) url.searchParams.set("relay_from", upstream);
   if (root && root !== shareBy) url.searchParams.set("relay_root", root);
+  if (options?.inviteTarget) url.searchParams.set("invite_target", options.inviteTarget);
+  if (options?.inviteLabel) url.searchParams.set("invite_label", options.inviteLabel);
+  if (options?.relayRelation) url.searchParams.set("relay_relation", options.relayRelation);
   return url.toString();
 }
 
@@ -97,6 +118,9 @@ export function trackEvent(event: EventName, meta?: Record<string, unknown>) {
       relayFrom: attribution.relayFrom,
       relayRoot: attribution.relayRoot,
       relayDepth: attribution.relayDepth,
+      sourceInviteTarget: attribution.inviteTarget,
+      sourceInviteLabel: attribution.inviteLabel,
+      sourceRelayRelation: attribution.relayRelation,
       ...meta,
     },
   };

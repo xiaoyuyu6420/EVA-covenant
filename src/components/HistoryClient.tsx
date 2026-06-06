@@ -19,6 +19,8 @@ import {
 import type { Grade } from "@/lib/types";
 
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
+const HISTORY_INVITE_TARGET = "history";
+const HISTORY_INVITE_LABEL = "历史再发";
 
 function formatDate(timestamp: number) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -36,7 +38,10 @@ function getHistoryMeta(item: HistoryItem) {
   const dimensionLabels = getFormationDimensionLabels(topDimensions, GRADE_LABELS);
   const relayDepth = normalizeRelayDepth(item.relayDepth);
   const relayRoot = item.relayRootCode ?? item.relaySourceCode;
-  const shareUrl = buildShareUrl(formationCode, item.relaySourceCode, relayRoot, relayDepth);
+  const shareUrl = buildShareUrl(formationCode, item.relaySourceCode, relayRoot, relayDepth, {
+    inviteTarget: HISTORY_INVITE_TARGET,
+    inviteLabel: HISTORY_INVITE_LABEL,
+  });
   const displayName = getResultDisplayName(result.top);
 
   const shareText = [
@@ -98,6 +103,8 @@ export default function HistoryClient() {
       relayFrom: item.relaySourceCode,
       relayRoot: meta.relayRoot,
       relayDepth: meta.relayDepth,
+      inviteTarget: HISTORY_INVITE_TARGET,
+      inviteLabel: HISTORY_INVITE_LABEL,
     });
 
     try {
@@ -112,6 +119,8 @@ export default function HistoryClient() {
         relayFrom: item.relaySourceCode,
         relayRoot: meta.relayRoot,
         relayDepth: meta.relayDepth,
+        inviteTarget: HISTORY_INVITE_TARGET,
+        inviteLabel: HISTORY_INVITE_LABEL,
       });
     } catch {
       setCopiedId(null);

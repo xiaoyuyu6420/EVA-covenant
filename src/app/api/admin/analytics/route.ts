@@ -21,6 +21,11 @@ function getMetaString(meta: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : null;
 }
 
+function getMetaBoolean(meta: Record<string, unknown>, key: string) {
+  const value = meta[key];
+  return value === true || value === "true" || value === "1";
+}
+
 function incrementShareStat(
   map: Map<string, { clicks: number; successes: number }>,
   key: string,
@@ -195,6 +200,7 @@ export async function GET() {
   const shareChannelMap = new Map<string, { clicks: number; successes: number }>();
   const inviteTargetMap = new Map<string, { label: string; clicks: number; successes: number }>();
   const relayRelationMap = new Map<string, { clicks: number; successes: number }>();
+  const namedInviteMap = new Map<string, { clicks: number; successes: number }>();
 
   for (const event of shareEvents) {
     const meta = parseMeta(event.meta);
@@ -217,6 +223,10 @@ export async function GET() {
     if (relayRelation) {
       incrementShareStat(relayRelationMap, relayRelation, event.event);
     }
+
+    if (getMetaBoolean(meta, "inviteNamed")) {
+      incrementShareStat(namedInviteMap, "named", event.event);
+    }
   }
 
   const inviteConversionEvents = await prisma.eventLog.findMany({
@@ -231,6 +241,7 @@ export async function GET() {
 
   const inviteConversionMap = new Map<string, ConversionStat>();
   const sourceUnitConversionMap = new Map<string, ConversionStat>();
+  const namedInviteConversionMap = new Map<string, ConversionStat>();
   const activeRelayRoots = new Set<string>();
   const relayHealth: RelayHealth = {
     shareSuccesses: 0,
@@ -278,6 +289,12 @@ export async function GET() {
       const current = sourceUnitConversionMap.get(sourceUnit) ?? createConversionStat(sourceUnit);
       incrementConversionStat(current, event.event);
       sourceUnitConversionMap.set(sourceUnit, current);
+    }
+
+    if (getMetaBoolean(meta, "sourceInviteNamed")) {
+      const current = namedInviteConversionMap.get("named") ?? createConversionStat("点名接力");
+      incrementConversionStat(current, event.event);
+      namedInviteConversionMap.set("named", current);
     }
   }
 
@@ -330,8 +347,25 @@ export async function GET() {
         successRate: value.clicks > 0 ? Math.round((value.successes / value.clicks) * 1000) / 10 : null,
       }))
       .sort((a, b) => b.successes - a.successes || b.clicks - a.clicks),
+    namedInviteStats: toShareStatRows(namedInviteMap).map((item) => ({
+      key: item.key,
+      label: "点名接力",
+      clicks: item.clicks,
+      successes: item.successes,
+      successRate: item.successRate,
+    })),
     inviteConversionStats: toConversionRows(inviteConversionMap).map((item) => ({
       target: item.key,
+      label: item.label,
+      relayEntries: item.relayEntries,
+      starts: item.starts,
+      completes: item.completes,
+      reshares: item.reshares,
+      completionRate: item.completionRate,
+      reshareRate: item.reshareRate,
+    })),
+    namedInviteConversionStats: toConversionRows(namedInviteConversionMap).map((item) => ({
+      key: item.key,
       label: item.label,
       relayEntries: item.relayEntries,
       starts: item.starts,
@@ -376,6 +410,8 @@ export async function GET() {
         sourceInviteTarget: typeof meta.sourceInviteTarget === "string" ? meta.sourceInviteTarget : null,
         sourceInviteLabel: typeof meta.sourceInviteLabel === "string" ? meta.sourceInviteLabel : null,
         sourceRelayRelation: typeof meta.sourceRelayRelation === "string" ? meta.sourceRelayRelation : null,
+        inviteNamed: getMetaBoolean(meta, "inviteNamed"),
+        sourceInviteNamed: getMetaBoolean(meta, "sourceInviteNamed"),
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
         relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
         relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,

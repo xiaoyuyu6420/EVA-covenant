@@ -24,12 +24,18 @@ function cleanRelayDepth(value: string | string[] | undefined) {
   return Math.min(depth, 99);
 }
 
+function cleanBooleanParam(value: string | string[] | undefined) {
+  const raw = firstParam(value);
+  return raw === "1" || raw === "true";
+}
+
 function buildRelayOgImageUrl(params: {
   shareBy: string;
   shareUnit?: string;
   relayDepth?: number;
   inviteLabel?: string;
   relayRelation?: string;
+  inviteNamed?: boolean;
 }) {
   const url = new URL("/api/og", getSiteUrl());
   url.searchParams.set("share_by", params.shareBy);
@@ -37,6 +43,7 @@ function buildRelayOgImageUrl(params: {
   if (params.relayDepth) url.searchParams.set("relay_depth", params.relayDepth.toString());
   if (params.inviteLabel) url.searchParams.set("invite_label", params.inviteLabel);
   if (params.relayRelation) url.searchParams.set("relay_relation", params.relayRelation);
+  if (params.inviteNamed) url.searchParams.set("invite_named", "1");
   return url;
 }
 
@@ -49,6 +56,7 @@ export async function generateMetadata(
   const sourceDepth = cleanRelayDepth(params.relay_depth);
   const inviteLabel = cleanParam(params.invite_label, 40);
   const relayRelation = cleanParam(params.relay_relation, 40);
+  const inviteNamed = cleanBooleanParam(params.invite_named);
 
   if (!shareBy) {
     return {
@@ -62,6 +70,7 @@ export async function generateMetadata(
   const contextParts = [
     shareUnit ? `上一站机体：${shareUnit}` : "",
     inviteLabel ? `${inviteLabel}邀请` : "",
+    inviteNamed ? "点名接力" : "",
     relayRelation ? `上一站关系：${relayRelation}` : "",
   ].filter(Boolean);
   const context = contextParts.length > 0 ? `${contextParts.join(" / ")}。` : "";
@@ -72,6 +81,7 @@ export async function generateMetadata(
     relayDepth: sourceDepth,
     inviteLabel,
     relayRelation,
+    inviteNamed,
   });
 
   return {

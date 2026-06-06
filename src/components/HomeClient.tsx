@@ -79,6 +79,7 @@ export default function HomeClient() {
         relayRoot: currentAttribution.relayRoot,
         relayDepth: currentAttribution.relayDepth ?? 1,
         nextRelayDepth: normalizeRelayDepth((currentAttribution.relayDepth ?? 1) + 1),
+        sourceInviteNamed: currentAttribution.inviteNamed,
       });
     }
 
@@ -103,8 +104,10 @@ export default function HomeClient() {
       sourceShareUnit: attribution.shareUnit,
       relayRoot: attribution.relayRoot ?? attribution.relayFrom,
       relayDepth: currentRelayDepth,
+      sourceInviteNamed: attribution.inviteNamed,
     });
   }, [
+    attribution.inviteNamed,
     attribution.relayDepth,
     attribution.relayFrom,
     attribution.relayRoot,
@@ -142,6 +145,7 @@ export default function HomeClient() {
             relayDepth={attribution.relayDepth}
             inviteLabel={attribution.inviteLabel}
             relayRelation={attribution.relayRelation}
+            inviteNamed={attribution.inviteNamed}
           />
         )}
         {screen === "loading" && (

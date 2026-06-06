@@ -99,6 +99,10 @@ const DIMENSION_CHAIN_PROMPTS = [
   "场面一乱就会接管的人，适合看谁更像指挥位。",
 ];
 
+function cleanInviteName(value: string) {
+  return value.trim().replace(/\s+/g, " ").slice(0, 12);
+}
+
 const THEMES: Record<string, Theme> = {
   unit00: {
     bg: "#121107",
@@ -747,6 +751,7 @@ export default function ResultScreen({
   const [copied, setCopied] = useState(false);
   const [copiedInviteKey, setCopiedInviteKey] = useState<RelayInviteKey | null>(null);
   const [returnCopied, setReturnCopied] = useState(false);
+  const [inviteNameInput, setInviteNameInput] = useState("");
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
@@ -776,12 +781,17 @@ export default function ResultScreen({
   });
   const primaryDimensionCode = primaryDimension ? DIMENSIONS[primaryDimension.index].code : "CORE";
   const primaryDimensionName = primaryDimension ? DIMENSIONS[primaryDimension.index].name : "核心指标";
+  const inviteName = cleanInviteName(inviteNameInput);
+  const hasNamedInvite = inviteName.length > 0;
+  const inviteAddress = hasNamedInvite ? `${inviteName}，` : "";
+  const inviteSubject = hasNamedInvite ? inviteName : "TA";
   const buildInviteShareUrl = (inviteTarget: RelayInviteKey, inviteLabel: string) =>
     buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
       shareUnit: profile.displayName,
       inviteTarget,
       inviteLabel,
       relayRelation: relayRelation?.label,
+      inviteNamed: hasNamedInvite,
     });
   const generalInviteUrl = buildInviteShareUrl("general", "下一站");
   const contrastInviteUrl = buildInviteShareUrl("contrast", "反差位");
@@ -809,11 +819,11 @@ export default function ResultScreen({
       url: generalInviteUrl,
       nativeText: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
-        "你测完把机体和编队码发我，看看你会接到哪一站。",
+        `${inviteAddress}你测完把机体和编队码发我，看看你会接到哪一站。`,
       ].join("\n"),
       message: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
-        "你测完把机体和编队码发我，看看你会接到哪一站：",
+        `${inviteAddress}你测完把机体和编队码发我，看看你会接到哪一站：`,
         generalInviteUrl,
       ].join("\n"),
     },
@@ -826,12 +836,12 @@ export default function ResultScreen({
       url: contrastInviteUrl,
       nativeText: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
-        "想找一个反差位接下一站：你测完把机体和编队码发我。",
+        `想找 ${inviteSubject} 接反差位：你测完把机体和编队码发我。`,
         "看我们是同轴、分支，还是完全反差。",
       ].join("\n"),
       message: [
         `我这站是 ${profile.displayName} / NODE ${relayNodeLabel}。`,
-        "想找一个反差位接下一站：你测完把机体和编队码发我。",
+        `想找 ${inviteSubject} 接反差位：你测完把机体和编队码发我。`,
         "看我们是同轴、分支，还是完全反差：",
         contrastInviteUrl,
       ].join("\n"),
@@ -845,11 +855,11 @@ export default function ResultScreen({
       url: sameAxisInviteUrl,
       nativeText: [
         `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
-        "你可能和我有同一个轴，测完把机体和编队码发我对一下。",
+        `${inviteAddress}你可能和我有同一个轴，测完把机体和编队码发我对一下。`,
       ].join("\n"),
       message: [
         `我这站是 ${profile.displayName}，高位指标里有 ${primaryDimensionCode}「${primaryDimensionName}」。`,
-        "你可能和我有同一个轴，测完把机体和编队码发我对一下：",
+        `${inviteAddress}你可能和我有同一个轴，测完把机体和编队码发我对一下：`,
         sameAxisInviteUrl,
       ].join("\n"),
     },
@@ -862,11 +872,11 @@ export default function ResultScreen({
       url: verifyInviteUrl,
       nativeText: [
         `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
-        "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下。",
+        `${inviteAddress}你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下。`,
       ].join("\n"),
       message: [
         `我测到 ${profile.displayName}，编队码是 ${formationCode}。`,
-        "你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下：",
+        `${inviteAddress}你比较了解我，测一次看看你会站到哪台机体；测完把结果发我校验一下：`,
         verifyInviteUrl,
       ].join("\n"),
     },
@@ -987,6 +997,7 @@ export default function ResultScreen({
       relayRelation: relayRelation?.label,
       inviteTarget: invite.key,
       inviteLabel: invite.title,
+      inviteNamed: hasNamedInvite,
     });
   };
 
@@ -1504,6 +1515,28 @@ export default function ResultScreen({
             <Share2 size={13} aria-hidden="true" />
             {copiedInviteKey === "general" ? "READY" : "SEND INVITE"}
           </button>
+        </div>
+
+        <div className="mb-3 grid grid-cols-1 min-[430px]:grid-cols-[minmax(0,1fr)_auto] gap-2 min-[430px]:items-center border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
+          <label className="min-w-0">
+            <span className="block text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+              DIRECT CALL
+            </span>
+            <input
+              value={inviteNameInput}
+              onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
+              maxLength={12}
+              placeholder="填一个称呼，分享会更像点名"
+              className="mt-2 h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
+              style={{ fontFamily: "var(--font-title)" }}
+            />
+          </label>
+          <span
+            className="min-[430px]:w-[128px] text-[0.72rem] leading-[1.45] text-[#888]"
+            style={{ fontFamily: "var(--font-title)" }}
+          >
+            {hasNamedInvite ? "已切换为点名接力。" : "不填也可以直接发送。"}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

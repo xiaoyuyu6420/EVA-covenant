@@ -48,6 +48,7 @@ describe("relay analytics urls", () => {
       inviteTarget: "contrast",
       inviteLabel: "反差位",
       relayRelation: "反差编队",
+      inviteNamed: true,
     }));
 
     expect(url.origin).toBe("https://eva.example");
@@ -59,6 +60,7 @@ describe("relay analytics urls", () => {
     expect(url.searchParams.get("invite_target")).toBe("contrast");
     expect(url.searchParams.get("invite_label")).toBe("反差位");
     expect(url.searchParams.get("relay_relation")).toBe("反差编队");
+    expect(url.searchParams.get("invite_named")).toBe("1");
   });
 
   it("reads source unit attribution from incoming relay links", () => {
@@ -73,7 +75,7 @@ describe("relay analytics urls", () => {
 
   it("keeps relay attribution after cleaning share params from the address bar", () => {
     mockWindow(
-      "https://eva.example/?share_by=UPSTREAM-01&share_unit=EVA%20%E5%88%9D%E5%8F%B7%E6%9C%BA&relay_root=ROOT-00&relay_depth=2&invite_target=contrast&invite_label=%E5%8F%8D%E5%B7%AE%E4%BD%8D&relay_relation=%E5%8F%8D%E5%B7%AE%E7%BC%96%E9%98%9F&keep=1"
+      "https://eva.example/?share_by=UPSTREAM-01&share_unit=EVA%20%E5%88%9D%E5%8F%B7%E6%9C%BA&relay_root=ROOT-00&relay_depth=2&invite_target=contrast&invite_label=%E5%8F%8D%E5%B7%AE%E4%BD%8D&relay_relation=%E5%8F%8D%E5%B7%AE%E7%BC%96%E9%98%9F&invite_named=1&keep=1"
     );
 
     expect(getAttribution().shareBy).toBe("UPSTREAM-01");
@@ -88,6 +90,7 @@ describe("relay analytics urls", () => {
       inviteTarget: "contrast",
       inviteLabel: "反差位",
       relayRelation: "反差编队",
+      inviteNamed: true,
     });
 
     const url = new URL(buildShareUrl("EVA01-CORE-A1", undefined, undefined, 3, {

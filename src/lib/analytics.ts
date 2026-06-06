@@ -19,6 +19,7 @@ export type AttributionContext = {
   inviteTarget?: string;
   inviteLabel?: string;
   relayRelation?: string;
+  inviteNamed?: boolean;
 };
 
 export type ShareUrlOptions = {
@@ -26,6 +27,7 @@ export type ShareUrlOptions = {
   inviteTarget?: string;
   inviteLabel?: string;
   relayRelation?: string;
+  inviteNamed?: boolean;
 };
 
 const SESSION_KEY = "eva-covenant-session";
@@ -44,6 +46,7 @@ const ATTRIBUTION_QUERY_KEYS = [
   "invite_target",
   "invite_label",
   "relay_relation",
+  "invite_named",
 ] as const;
 
 type StoredAttribution = AttributionContext & {
@@ -117,6 +120,11 @@ function getPositiveIntParam(params: URLSearchParams, key: string) {
   return Math.min(value, 99);
 }
 
+function getBooleanParam(params: URLSearchParams, key: string) {
+  const raw = params.get(key);
+  return raw === "1" || raw === "true" ? true : undefined;
+}
+
 function readAttributionFromParams(params: URLSearchParams): AttributionContext {
   return {
     utmSource: getParam(params, "utm_source", 80),
@@ -129,6 +137,7 @@ function readAttributionFromParams(params: URLSearchParams): AttributionContext 
     inviteTarget: getParam(params, "invite_target", 80),
     inviteLabel: getParam(params, "invite_label", 80),
     relayRelation: getParam(params, "relay_relation", 80),
+    inviteNamed: getBooleanParam(params, "invite_named"),
   };
 }
 
@@ -180,6 +189,7 @@ function readPersistedAttribution(): AttributionContext {
       inviteTarget: cleanStoredString(stored.inviteTarget, 80),
       inviteLabel: cleanStoredString(stored.inviteLabel, 80),
       relayRelation: cleanStoredString(stored.relayRelation, 80),
+      inviteNamed: stored.inviteNamed === true ? true : undefined,
     };
 
     return hasAttributionValue(attribution) ? attribution : {};
@@ -274,6 +284,7 @@ export function buildShareUrl(
   if (options?.inviteTarget) url.searchParams.set("invite_target", options.inviteTarget);
   if (options?.inviteLabel) url.searchParams.set("invite_label", options.inviteLabel);
   if (options?.relayRelation) url.searchParams.set("relay_relation", options.relayRelation);
+  if (options?.inviteNamed) url.searchParams.set("invite_named", "1");
   return url.toString();
 }
 
@@ -296,6 +307,7 @@ export function trackEvent(event: EventName, meta?: Record<string, unknown>) {
       sourceInviteTarget: attribution.inviteTarget,
       sourceInviteLabel: attribution.inviteLabel,
       sourceRelayRelation: attribution.relayRelation,
+      sourceInviteNamed: attribution.inviteNamed,
       ...meta,
     },
   };

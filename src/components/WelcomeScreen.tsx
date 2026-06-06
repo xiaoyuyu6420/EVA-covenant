@@ -14,6 +14,7 @@ interface Props {
   relayDepth?: number;
   inviteLabel?: string;
   relayRelation?: string;
+  inviteNamed?: boolean;
 }
 
 type NavigatorWithStandalone = Navigator & {
@@ -39,6 +40,7 @@ export default function WelcomeScreen({
   relayDepth,
   inviteLabel,
   relayRelation,
+  inviteNamed,
 }: Props) {
   const [bootPhase, setBootPhase] = useState(0);
   const [pilotCount, setPilotCount] = useState<number | null>(null);
@@ -46,7 +48,7 @@ export default function WelcomeScreen({
   const t = useT();
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
   const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
-  const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation);
+  const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation || inviteNamed);
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), 400);
@@ -197,6 +199,16 @@ export default function WelcomeScreen({
                   </p>
                   <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
                     {relayRelation}
+                  </p>
+                </div>
+              )}
+              {inviteNamed && (
+                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
+                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    DIRECT CALL
+                  </p>
+                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                    点名接力
                   </p>
                 </div>
               )}

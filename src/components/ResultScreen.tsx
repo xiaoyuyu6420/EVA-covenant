@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { Copy, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
@@ -752,6 +752,9 @@ export default function ResultScreen({
   const [copiedInviteKey, setCopiedInviteKey] = useState<RelayInviteKey | null>(null);
   const [returnCopied, setReturnCopied] = useState(false);
   const [inviteNameInput, setInviteNameInput] = useState("");
+  const [relayBranchCount, setRelayBranchCount] = useState(0);
+  const successfulInviteKeysRef = useRef<Set<RelayInviteKey>>(new Set());
+  const trackedRelayBranchReadyRef = useRef(false);
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
@@ -1001,6 +1004,30 @@ export default function ResultScreen({
     });
   };
 
+  const markInviteSuccess = (invite: RelayInviteOption) => {
+    const nextInviteKeys = new Set(successfulInviteKeysRef.current);
+    nextInviteKeys.add(invite.key);
+    successfulInviteKeysRef.current = nextInviteKeys;
+    setRelayBranchCount(Math.min(nextInviteKeys.size, 2));
+
+    if (nextInviteKeys.size >= 2 && !trackedRelayBranchReadyRef.current) {
+      trackedRelayBranchReadyRef.current = true;
+      trackEvent("relay_branch_ready", {
+        code: top.code,
+        unit: profile.displayName,
+        shareUnit: profile.displayName,
+        formationCode,
+        relayFrom: relaySourceCode,
+        sourceShareUnit: relaySourceUnit,
+        relayRoot: effectiveRelayRootCode,
+        relayDepth: currentRelayDepth,
+        relayRelation: relayRelation?.label,
+        inviteNamed: hasNamedInvite,
+        inviteTargets: Array.from(nextInviteKeys).join(","),
+      });
+    }
+  };
+
   const copyInvite = async (
     invite: RelayInviteOption = generalInvite,
     channel: InviteShareChannel = invite.key === "general" ? "invite_copy" : "target_invite_copy",
@@ -1015,6 +1042,7 @@ export default function ResultScreen({
       setCopiedInviteKey(invite.key);
       window.setTimeout(() => setCopiedInviteKey(null), 1600);
       trackInviteShare("share_success", invite, channel);
+      markInviteSuccess(invite);
     } catch {
       setCopiedInviteKey(null);
     }
@@ -1035,6 +1063,7 @@ export default function ResultScreen({
         setCopiedInviteKey(invite.key);
         window.setTimeout(() => setCopiedInviteKey(null), 1600);
         trackInviteShare("share_success", invite, nativeChannel);
+        markInviteSuccess(invite);
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -1537,6 +1566,35 @@ export default function ResultScreen({
           >
             {hasNamedInvite ? "已切换为点名接力。" : "不填也可以直接发送。"}
           </span>
+        </div>
+
+        <div className="mb-3 border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+              BRANCH READY
+            </span>
+            <span className="text-[0.72rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
+              {relayBranchCount}/2
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {[0, 1].map((index) => (
+              <div key={index} className="h-2 bg-white/10 overflow-hidden">
+                <div
+                  className="h-full transition-all"
+                  style={{
+                    width: relayBranchCount > index ? "100%" : "0%",
+                    background: "linear-gradient(90deg, var(--unit-primary), var(--unit-secondary))",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-[0.76rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
+            {relayBranchCount >= 2
+              ? "两条下一站已经发出，编队开始分支。"
+              : "建议发给两个不同位置的人，让这条编队真的分出去。"}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

@@ -8,6 +8,7 @@ const ALLOWED_EVENTS = new Set([
   "quiz_complete",
   "share_click",
   "share_success",
+  "relay_branch_ready",
 ]);
 
 function cleanString(value: unknown, maxLength: number) {

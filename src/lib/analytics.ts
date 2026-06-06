@@ -6,7 +6,8 @@ export type EventName =
   | "quiz_start"
   | "quiz_complete"
   | "share_click"
-  | "share_success";
+  | "share_success"
+  | "relay_branch_ready";
 
 export type AttributionContext = {
   utmSource?: string;

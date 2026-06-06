@@ -62,6 +62,7 @@ type ConversionStat = {
   starts: number;
   completes: number;
   reshares: number;
+  branchReady: number;
 };
 
 type RelayHealth = {
@@ -70,12 +71,14 @@ type RelayHealth = {
   relayStarts: number;
   relayCompletes: number;
   relayReshares: number;
+  relayBranchReady: number;
   activeRoots: number;
   maxDepth: number;
   entryPerShare: number | null;
   startRate: number | null;
   completionRate: number | null;
   reshareRate: number | null;
+  branchReadyRate: number | null;
 };
 
 function createConversionStat(label: string): ConversionStat {
@@ -85,6 +88,7 @@ function createConversionStat(label: string): ConversionStat {
     starts: 0,
     completes: 0,
     reshares: 0,
+    branchReady: 0,
   };
 }
 
@@ -93,6 +97,7 @@ function incrementConversionStat(stat: ConversionStat, event: string) {
   if (event === "quiz_start") stat.starts++;
   if (event === "quiz_complete") stat.completes++;
   if (event === "share_success") stat.reshares++;
+  if (event === "relay_branch_ready") stat.branchReady++;
 }
 
 function toConversionRows(map: Map<string, ConversionStat>) {
@@ -104,8 +109,10 @@ function toConversionRows(map: Map<string, ConversionStat>) {
       starts: value.starts,
       completes: value.completes,
       reshares: value.reshares,
+      branchReady: value.branchReady,
       completionRate: toRate(value.completes, value.starts),
       reshareRate: toRate(value.reshares, value.completes),
+      branchReadyRate: toRate(value.branchReady, value.completes),
     }))
     .sort((a, b) =>
       b.completes - a.completes ||
@@ -232,7 +239,7 @@ export async function GET() {
   const inviteConversionEvents = await prisma.eventLog.findMany({
     take: 1500,
     orderBy: { createdAt: "desc" },
-    where: { event: { in: ["relay_entry", "quiz_start", "quiz_complete", "share_success"] } },
+    where: { event: { in: ["relay_entry", "quiz_start", "quiz_complete", "share_success", "relay_branch_ready"] } },
     select: {
       event: true,
       meta: true,
@@ -249,12 +256,14 @@ export async function GET() {
     relayStarts: 0,
     relayCompletes: 0,
     relayReshares: 0,
+    relayBranchReady: 0,
     activeRoots: 0,
     maxDepth: 1,
     entryPerShare: null,
     startRate: null,
     completionRate: null,
     reshareRate: null,
+    branchReadyRate: null,
   };
 
   for (const event of inviteConversionEvents) {
@@ -275,6 +284,7 @@ export async function GET() {
     if (event.event === "relay_entry") relayHealth.relayEntries++;
     if (event.event === "quiz_start" && isRelayEvent) relayHealth.relayStarts++;
     if (event.event === "quiz_complete" && isRelayEvent) relayHealth.relayCompletes++;
+    if (event.event === "relay_branch_ready" && isRelayEvent) relayHealth.relayBranchReady++;
 
     const target = getMetaString(meta, "sourceInviteTarget");
     if (target) {
@@ -303,6 +313,7 @@ export async function GET() {
   relayHealth.startRate = toRate(relayHealth.relayStarts, relayHealth.relayEntries);
   relayHealth.completionRate = toRate(relayHealth.relayCompletes, relayHealth.relayStarts);
   relayHealth.reshareRate = toRate(relayHealth.relayReshares, relayHealth.relayCompletes);
+  relayHealth.branchReadyRate = toRate(relayHealth.relayBranchReady, relayHealth.relayCompletes);
 
   // 最近记录
   const recentRecords = await prisma.testRecord.findMany({
@@ -361,8 +372,10 @@ export async function GET() {
       starts: item.starts,
       completes: item.completes,
       reshares: item.reshares,
+      branchReady: item.branchReady,
       completionRate: item.completionRate,
       reshareRate: item.reshareRate,
+      branchReadyRate: item.branchReadyRate,
     })),
     namedInviteConversionStats: toConversionRows(namedInviteConversionMap).map((item) => ({
       key: item.key,
@@ -371,8 +384,10 @@ export async function GET() {
       starts: item.starts,
       completes: item.completes,
       reshares: item.reshares,
+      branchReady: item.branchReady,
       completionRate: item.completionRate,
       reshareRate: item.reshareRate,
+      branchReadyRate: item.branchReadyRate,
     })),
     sourceUnitConversionStats: toConversionRows(sourceUnitConversionMap).map((item) => ({
       unit: item.key,
@@ -381,8 +396,10 @@ export async function GET() {
       starts: item.starts,
       completes: item.completes,
       reshares: item.reshares,
+      branchReady: item.branchReady,
       completionRate: item.completionRate,
       reshareRate: item.reshareRate,
+      branchReadyRate: item.branchReadyRate,
     })),
     relayRelationStats: toShareStatRows(relayRelationMap).map((item) => ({
       relation: item.key,
@@ -412,6 +429,7 @@ export async function GET() {
         sourceRelayRelation: typeof meta.sourceRelayRelation === "string" ? meta.sourceRelayRelation : null,
         inviteNamed: getMetaBoolean(meta, "inviteNamed"),
         sourceInviteNamed: getMetaBoolean(meta, "sourceInviteNamed"),
+        inviteTargets: typeof meta.inviteTargets === "string" ? meta.inviteTargets : null,
         shareBy: typeof meta.shareBy === "string" ? meta.shareBy : null,
         relayFrom: typeof meta.relayFrom === "string" ? meta.relayFrom : null,
         relayRoot: typeof meta.relayRoot === "string" ? meta.relayRoot : null,

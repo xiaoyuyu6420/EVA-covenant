@@ -79,12 +79,14 @@ interface Analytics {
     relayStarts: number;
     relayCompletes: number;
     relayReshares: number;
+    relayBranchReady: number;
     activeRoots: number;
     maxDepth: number;
     entryPerShare: number | null;
     startRate: number | null;
     completionRate: number | null;
     reshareRate: number | null;
+    branchReadyRate: number | null;
   };
   shareChannelStats: { channel: string; clicks: number; successes: number; successRate: number | null }[];
   inviteTargetStats: { target: string; label: string; clicks: number; successes: number; successRate: number | null }[];
@@ -96,8 +98,10 @@ interface Analytics {
     starts: number;
     completes: number;
     reshares: number;
+    branchReady: number;
     completionRate: number | null;
     reshareRate: number | null;
+    branchReadyRate: number | null;
   }[];
   namedInviteConversionStats: {
     key: string;
@@ -106,8 +110,10 @@ interface Analytics {
     starts: number;
     completes: number;
     reshares: number;
+    branchReady: number;
     completionRate: number | null;
     reshareRate: number | null;
+    branchReadyRate: number | null;
   }[];
   sourceUnitConversionStats: {
     unit: string;
@@ -116,8 +122,10 @@ interface Analytics {
     starts: number;
     completes: number;
     reshares: number;
+    branchReady: number;
     completionRate: number | null;
     reshareRate: number | null;
+    branchReadyRate: number | null;
   }[];
   relayRelationStats: { relation: string; clicks: number; successes: number; successRate: number | null }[];
   recentEvents: {
@@ -127,6 +135,7 @@ interface Analytics {
     formationCode: string | null; shareBy: string | null;
     inviteTarget: string | null; inviteLabel: string | null; relayRelation: string | null;
     sourceInviteTarget: string | null; sourceInviteLabel: string | null; sourceRelayRelation: string | null;
+    inviteTargets: string | null;
     inviteNamed: boolean; sourceInviteNamed: boolean;
     relayFrom: string | null; relayRoot: string | null;
     relayDepth: number | null; nextRelayDepth: number | null;
@@ -146,9 +155,10 @@ const EVENT_LABELS: Record<string, string> = {
   quiz_complete: "完成",
   share_click: "点击分享",
   share_success: "分享成功",
+  relay_branch_ready: "2路发车",
 };
 
-const FUNNEL_EVENTS = ["page_view", "relay_entry", "quiz_start", "quiz_complete", "share_click", "share_success"];
+const FUNNEL_EVENTS = ["page_view", "relay_entry", "quiz_start", "quiz_complete", "share_click", "share_success", "relay_branch_ready"];
 
 function sourceLabel(source: string | null) {
   return source ?? "直接";
@@ -350,18 +360,21 @@ function RecordsPanel() {
     item.starts,
     item.completes,
     item.reshares,
+    item.branchReady,
   ]), 1);
   const maxNamedInviteConversionCount = Math.max(...data.namedInviteConversionStats.flatMap((item) => [
     item.relayEntries,
     item.starts,
     item.completes,
     item.reshares,
+    item.branchReady,
   ]), 1);
   const maxSourceUnitConversionCount = Math.max(...data.sourceUnitConversionStats.flatMap((item) => [
     item.relayEntries,
     item.starts,
     item.completes,
     item.reshares,
+    item.branchReady,
   ]), 1);
   const maxRelayRelationClicks = Math.max(...data.relayRelationStats.map((item) => item.clicks), 1);
 
@@ -410,6 +423,7 @@ function RecordsPanel() {
             ["接力进入", data.relayHealth.relayEntries.toString(), `每次分享带入 ${ratioLabel(data.relayHealth.entryPerShare)}`],
             ["接力完成", data.relayHealth.relayCompletes.toString(), `完成率 ${rateLabel(data.relayHealth.completionRate)}`],
             ["接力再分享", data.relayHealth.relayReshares.toString(), `再分享率 ${rateLabel(data.relayHealth.reshareRate)}`],
+            ["2路发车", data.relayHealth.relayBranchReady.toString(), `达标率 ${rateLabel(data.relayHealth.branchReadyRate)}`],
             ["开始率", rateLabel(data.relayHealth.startRate), `${data.relayHealth.relayStarts}/${data.relayHealth.relayEntries}`],
             ["活跃链根", data.relayHealth.activeRoots.toString(), "有二级以上接力的根"],
             ["最大深度", `NODE ${String(data.relayHealth.maxDepth).padStart(2, "0")}`, "当前最高接力站位"],
@@ -605,15 +619,16 @@ function RecordsPanel() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs eva-text text-[#94a3b8]">{item.label}</span>
                   <span className="text-xs eva-text text-[#4ade80]">
-                    完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 再分享 {rateLabel(item.reshareRate)}
+                    完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 2路 {rateLabel(item.branchReadyRate)}
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   {([
                     ["进入", item.relayEntries, "#38bdf8"],
                     ["开始", item.starts, "#7c3aed"],
                     ["完成", item.completes, "#4ade80"],
                     ["再分享", item.reshares, "#f97316"],
+                    ["2路", item.branchReady, "#facc15"],
                   ] as [string, number, string][]).map(([label, count, color]) => (
                     <div key={label} className="space-y-1">
                       <div className="flex items-center justify-between gap-1">
@@ -649,15 +664,16 @@ function RecordsPanel() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs eva-text text-[#94a3b8]">{item.label}</span>
                 <span className="text-xs eva-text text-[#4ade80]">
-                  完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 再分享 {rateLabel(item.reshareRate)}
+                  完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 2路 {rateLabel(item.branchReadyRate)}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {([
                   ["进入", item.relayEntries, "#38bdf8"],
                   ["开始", item.starts, "#7c3aed"],
                   ["完成", item.completes, "#4ade80"],
                   ["再分享", item.reshares, "#f97316"],
+                  ["2路", item.branchReady, "#facc15"],
                 ] as [string, number, string][]).map(([label, count, color]) => (
                   <div key={label} className="space-y-1">
                     <div className="flex items-center justify-between gap-1">
@@ -692,15 +708,16 @@ function RecordsPanel() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs eva-text text-[#94a3b8]">{item.label}</span>
                 <span className="text-xs eva-text text-[#4ade80]">
-                  完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 再分享 {rateLabel(item.reshareRate)}
+                  完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)} / 2路 {rateLabel(item.branchReadyRate)}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {([
                   ["进入", item.relayEntries, "#38bdf8"],
                   ["开始", item.starts, "#7c3aed"],
                   ["完成", item.completes, "#4ade80"],
                   ["再分享", item.reshares, "#f97316"],
+                  ["2路", item.branchReady, "#facc15"],
                 ] as [string, number, string][]).map(([label, count, color]) => (
                   <div key={label} className="space-y-1">
                     <div className="flex items-center justify-between gap-1">
@@ -764,6 +781,11 @@ function RecordsPanel() {
                     {(event.inviteNamed || event.sourceInviteNamed) && (
                       <span className="block text-[10px] text-[#38bdf8]">
                         DIRECT CALL
+                      </span>
+                    )}
+                    {event.inviteTargets && (
+                      <span className="block text-[10px] text-[#facc15]">
+                        BRANCH {event.inviteTargets}
                       </span>
                     )}
                   </td>

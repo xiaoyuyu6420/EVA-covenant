@@ -47,12 +47,30 @@ function toRate(numerator: number, denominator: number) {
   return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
 }
 
+function toRatio(numerator: number, denominator: number) {
+  return denominator > 0 ? Math.round((numerator / denominator) * 100) / 100 : null;
+}
+
 type ConversionStat = {
   label: string;
   relayEntries: number;
   starts: number;
   completes: number;
   reshares: number;
+};
+
+type RelayHealth = {
+  shareSuccesses: number;
+  relayEntries: number;
+  relayStarts: number;
+  relayCompletes: number;
+  relayReshares: number;
+  activeRoots: number;
+  maxDepth: number;
+  entryPerShare: number | null;
+  startRate: number | null;
+  completionRate: number | null;
+  reshareRate: number | null;
 };
 
 function createConversionStat(label: string): ConversionStat {
@@ -213,9 +231,40 @@ export async function GET() {
 
   const inviteConversionMap = new Map<string, ConversionStat>();
   const sourceUnitConversionMap = new Map<string, ConversionStat>();
+  const activeRelayRoots = new Set<string>();
+  const relayHealth: RelayHealth = {
+    shareSuccesses: 0,
+    relayEntries: 0,
+    relayStarts: 0,
+    relayCompletes: 0,
+    relayReshares: 0,
+    activeRoots: 0,
+    maxDepth: 1,
+    entryPerShare: null,
+    startRate: null,
+    completionRate: null,
+    reshareRate: null,
+  };
 
   for (const event of inviteConversionEvents) {
     const meta = parseMeta(event.meta);
+    const relayDepth = event.event === "relay_entry"
+      ? parseRelayDepth(meta.nextRelayDepth) ?? parseRelayDepth(meta.relayDepth)
+      : parseRelayDepth(meta.relayDepth);
+    if (relayDepth) relayHealth.maxDepth = Math.max(relayHealth.maxDepth, relayDepth);
+
+    const relayRoot = getMetaString(meta, "relayRoot") ?? getMetaString(meta, "shareBy");
+    if (relayRoot && relayDepth && relayDepth > 1) activeRelayRoots.add(relayRoot);
+
+    const isRelayEvent = Boolean(getMetaString(meta, "shareBy"));
+    if (event.event === "share_success") {
+      relayHealth.shareSuccesses++;
+      if (isRelayEvent) relayHealth.relayReshares++;
+    }
+    if (event.event === "relay_entry") relayHealth.relayEntries++;
+    if (event.event === "quiz_start" && isRelayEvent) relayHealth.relayStarts++;
+    if (event.event === "quiz_complete" && isRelayEvent) relayHealth.relayCompletes++;
+
     const target = getMetaString(meta, "sourceInviteTarget");
     if (target) {
       const current = inviteConversionMap.get(target) ?? createConversionStat(getMetaString(meta, "sourceInviteLabel") ?? target);
@@ -231,6 +280,12 @@ export async function GET() {
       sourceUnitConversionMap.set(sourceUnit, current);
     }
   }
+
+  relayHealth.activeRoots = activeRelayRoots.size;
+  relayHealth.entryPerShare = toRatio(relayHealth.relayEntries, relayHealth.shareSuccesses);
+  relayHealth.startRate = toRate(relayHealth.relayStarts, relayHealth.relayEntries);
+  relayHealth.completionRate = toRate(relayHealth.relayCompletes, relayHealth.relayStarts);
+  relayHealth.reshareRate = toRate(relayHealth.relayReshares, relayHealth.relayCompletes);
 
   // 最近记录
   const recentRecords = await prisma.testRecord.findMany({
@@ -259,6 +314,7 @@ export async function GET() {
     relayDepthStats: Array.from(relayDepthMap.entries())
       .sort(([a], [b]) => a - b)
       .map(([depth, count]) => ({ depth, count })),
+    relayHealth,
     shareChannelStats: toShareStatRows(shareChannelMap).map((item) => ({
       channel: item.key,
       clicks: item.clicks,

@@ -73,6 +73,19 @@ interface Analytics {
   eventCounts: { event: string; count: number }[];
   eventUtmStats: { source: string | null; event: string; count: number }[];
   relayDepthStats: { depth: number; count: number }[];
+  relayHealth: {
+    shareSuccesses: number;
+    relayEntries: number;
+    relayStarts: number;
+    relayCompletes: number;
+    relayReshares: number;
+    activeRoots: number;
+    maxDepth: number;
+    entryPerShare: number | null;
+    startRate: number | null;
+    completionRate: number | null;
+    reshareRate: number | null;
+  };
   shareChannelStats: { channel: string; clicks: number; successes: number; successRate: number | null }[];
   inviteTargetStats: { target: string; label: string; clicks: number; successes: number; successRate: number | null }[];
   inviteConversionStats: {
@@ -149,6 +162,10 @@ function channelLabel(channel: string | null) {
 
 function rateLabel(rate: number | null) {
   return rate === null ? "—" : `${rate}%`;
+}
+
+function ratioLabel(ratio: number | null) {
+  return ratio === null ? "—" : ratio.toFixed(2);
 }
 
 interface QuestionRow {
@@ -359,6 +376,32 @@ function RecordsPanel() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">RELAY HEALTH — 链式传播健康度</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            ["分享成功", data.relayHealth.shareSuccesses.toString(), "全部成功分享动作"],
+            ["接力进入", data.relayHealth.relayEntries.toString(), `每次分享带入 ${ratioLabel(data.relayHealth.entryPerShare)}`],
+            ["接力完成", data.relayHealth.relayCompletes.toString(), `完成率 ${rateLabel(data.relayHealth.completionRate)}`],
+            ["接力再分享", data.relayHealth.relayReshares.toString(), `再分享率 ${rateLabel(data.relayHealth.reshareRate)}`],
+            ["开始率", rateLabel(data.relayHealth.startRate), `${data.relayHealth.relayStarts}/${data.relayHealth.relayEntries}`],
+            ["活跃链根", data.relayHealth.activeRoots.toString(), "有二级以上接力的根"],
+            ["最大深度", `NODE ${String(data.relayHealth.maxDepth).padStart(2, "0")}`, "当前最高接力站位"],
+            [
+              "传播判断",
+              data.relayHealth.entryPerShare !== null && data.relayHealth.entryPerShare >= 1 ? "扩张" : "观察",
+              "每次分享带来 >=1 次接力进入时接近自增长",
+            ],
+          ].map(([label, value, hint]) => (
+            <div key={label} className="border border-[#2a2a3e] rounded p-3 bg-[#050510]/70">
+              <p className="text-[10px] nerv-label text-[#64748b]">{label}</p>
+              <p className="mt-2 text-xl eva-text text-[#4ade80]">{value}</p>
+              <p className="mt-1 text-[11px] text-[#64748b] leading-snug">{hint}</p>
+            </div>
+          ))}
         </div>
       </div>
 

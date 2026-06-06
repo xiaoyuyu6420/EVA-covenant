@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { getSharePreview } from "@/lib/share-preview";
 
 export const runtime = "edge";
 
@@ -24,19 +25,29 @@ function getRelayDepth(params: URLSearchParams) {
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const shareBy = getParam(params, "share_by", "DIRECT", 96);
-  const shareUnit = getParam(params, "share_unit", "EVA UNIT", 80);
+  const shareUnit = getParam(params, "share_unit", "", 80);
   const isNamedInvite = params.get("invite_named") === "1" || params.get("invite_named") === "true";
-  const inviteLabel = getParam(params, "invite_label", isNamedInvite ? "点名接力" : "下一站", 32);
-  const relayRelation = getParam(params, "relay_relation", "FORMATION OPEN", 40);
-  const nextDepth = Math.min(getRelayDepth(params) + 1, 99);
-  const nodeLabel = nextDepth.toString().padStart(2, "0");
-  const nodeText = `NODE ${nodeLabel}`;
+  const inviteLabel = getParam(params, "invite_label", "", 32);
+  const relayRelation = getParam(params, "relay_relation", "", 40);
+  const inviteTarget = getParam(params, "invite_target", "general", 40);
+  const preview = getSharePreview({
+    shareBy,
+    shareUnit,
+    relayDepth: getRelayDepth(params),
+    inviteTarget,
+    inviteLabel,
+    relayRelation,
+    inviteNamed: isNamedInvite,
+    shareId: getParam(params, "share_id", "", 64),
+  });
+  const nodeText = `NODE ${preview.nodeLabel}`;
+  const shareIdLabel = preview.shareId ? preview.shareId.slice(-12).toUpperCase() : "UNTRACKED";
   const detailRows = [
-    { label: "INVITE MODE", value: inviteLabel, color: "#7cff00" },
-    { label: "DIRECT CALL", value: isNamedInvite ? "ENABLED" : "OPEN", color: "#38bdf8" },
-    { label: "SOURCE UNIT", value: shareUnit, color: "#f5f5f5" },
-    { label: "SOURCE CODE", value: shareBy, color: "#f27405" },
-    { label: "RELATION", value: relayRelation, color: "#a78bfa" },
+    { label: "INVITE MODE", value: preview.inviteLabel, color: preview.accent },
+    { label: "CALL TYPE", value: isNamedInvite ? "DIRECT" : "OPEN", color: "#38bdf8" },
+    { label: "SOURCE UNIT", value: preview.sourceUnit, color: "#f5f5f5" },
+    { label: "SOURCE CODE", value: preview.sourceCode, color: preview.secondary },
+    { label: "RELATION", value: preview.relation, color: "#a78bfa" },
   ];
 
   return new ImageResponse(
@@ -61,7 +72,7 @@ export async function GET(req: NextRequest) {
             inset: 0,
             display: "flex",
             background:
-              "radial-gradient(circle at 82% 16%, rgba(82,255,0,0.2), transparent 28%), linear-gradient(135deg, rgba(124,58,237,0.2), transparent 48%)",
+              `radial-gradient(circle at 82% 16%, ${preview.accent}33, transparent 28%), linear-gradient(135deg, rgba(124,58,237,0.2), transparent 48%)`,
           }}
         />
         <div
@@ -70,7 +81,7 @@ export async function GET(req: NextRequest) {
             display: "flex",
             right: -28,
             top: -18,
-            color: "rgba(82,255,0,0.12)",
+            color: `${preview.accent}22`,
             fontSize: 210,
             fontWeight: 900,
             letterSpacing: -4,
@@ -107,28 +118,28 @@ export async function GET(req: NextRequest) {
               </span>
             </div>
           </div>
-          <div style={{ display: "flex", color: "#7cff00", fontSize: 24, fontWeight: 800, letterSpacing: 4 }}>
+          <div style={{ display: "flex", color: preview.accent, fontSize: 24, fontWeight: 800, letterSpacing: 4 }}>
             {nodeText}
           </div>
         </div>
 
         <div style={{ display: "flex", flex: 1, position: "relative", paddingTop: 48, gap: 42 }}>
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", color: "#7cff00", fontSize: 28, fontWeight: 800, letterSpacing: 6 }}>
-                FORMATION RELAY
-              </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", color: preview.accent, fontSize: 28, fontWeight: 800, letterSpacing: 6 }}>
+              {preview.badge}
+            </div>
             <div
               style={{
                 marginTop: 24,
                 color: "#fff",
-                fontSize: 64,
+                fontSize: preview.headline.length > 14 ? 56 : 64,
                 lineHeight: 1.02,
                 fontWeight: 900,
                 maxWidth: 690,
                 display: "flex",
               }}
             >
-              接入 EVA 编队测试
+              {preview.headline}
             </div>
             <div
               style={{
@@ -140,7 +151,22 @@ export async function GET(req: NextRequest) {
                 display: "flex",
               }}
             >
-              完成测试后生成你的机体和编队码，把下一站接到这条链路上。
+              {preview.body}
+            </div>
+            <div
+              style={{
+                marginTop: 26,
+                borderLeft: `8px solid ${preview.accent}`,
+                background: "rgba(0,0,0,0.38)",
+                color: "#e5e5e5",
+                fontSize: 24,
+                lineHeight: 1.35,
+                padding: "16px 20px",
+                maxWidth: 760,
+                display: "flex",
+              }}
+            >
+              {preview.challenge}
             </div>
           </div>
 
@@ -199,7 +225,8 @@ export async function GET(req: NextRequest) {
           }}
         >
           <span style={{ display: "flex" }}>EVA-COVENANT / FORMATION_RELAY</span>
-          <span style={{ display: "flex", color: "#7cff00" }}>JOIN TEST</span>
+          <span style={{ display: "flex", color: "#777" }}>LINK {shareIdLabel}</span>
+          <span style={{ display: "flex", color: preview.accent }}>{preview.footerLabel}</span>
         </div>
       </div>
     ),

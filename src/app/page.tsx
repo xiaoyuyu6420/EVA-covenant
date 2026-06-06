@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import HomeClient from "@/components/HomeClient";
+import { DEFAULT_SHARE_DESCRIPTION, DEFAULT_SHARE_TITLE, getSharePreview } from "@/lib/share-preview";
 import { getSiteUrl } from "@/lib/site";
-
-const DEFAULT_TITLE = "EVA 驾驶员适格测试 | NERV-HQ";
-const DEFAULT_DESCRIPTION = "NERV紧急征召——你的适格率是多少？15维度心理测绘，24种人格匹配，测出你的EVA驾驶员类型。新世纪福音战士人格测试";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -33,17 +31,21 @@ function buildRelayOgImageUrl(params: {
   shareBy: string;
   shareUnit?: string;
   relayDepth?: number;
+  inviteTarget?: string;
   inviteLabel?: string;
   relayRelation?: string;
   inviteNamed?: boolean;
+  shareId?: string;
 }) {
   const url = new URL("/api/og", getSiteUrl());
   url.searchParams.set("share_by", params.shareBy);
   if (params.shareUnit) url.searchParams.set("share_unit", params.shareUnit);
   if (params.relayDepth) url.searchParams.set("relay_depth", params.relayDepth.toString());
+  if (params.inviteTarget) url.searchParams.set("invite_target", params.inviteTarget);
   if (params.inviteLabel) url.searchParams.set("invite_label", params.inviteLabel);
   if (params.relayRelation) url.searchParams.set("relay_relation", params.relayRelation);
   if (params.inviteNamed) url.searchParams.set("invite_named", "1");
+  if (params.shareId) url.searchParams.set("share_id", params.shareId);
   return url;
 }
 
@@ -54,42 +56,46 @@ export async function generateMetadata(
   const shareBy = cleanParam(params.share_by);
   const shareUnit = cleanParam(params.share_unit, 80);
   const sourceDepth = cleanRelayDepth(params.relay_depth);
+  const inviteTarget = cleanParam(params.invite_target, 40);
   const inviteLabel = cleanParam(params.invite_label, 40);
   const relayRelation = cleanParam(params.relay_relation, 40);
   const inviteNamed = cleanBooleanParam(params.invite_named);
+  const shareId = cleanParam(params.share_id, 64);
 
   if (!shareBy) {
     return {
-      title: DEFAULT_TITLE,
-      description: DEFAULT_DESCRIPTION,
+      title: DEFAULT_SHARE_TITLE,
+      description: DEFAULT_SHARE_DESCRIPTION,
     };
   }
 
-  const nextDepth = Math.min((sourceDepth ?? 1) + 1, 99);
-  const title = "EVA 编队接力 | NERV-HQ";
-  const contextParts = [
-    shareUnit ? `上一站机体：${shareUnit}` : "",
-    inviteLabel ? `${inviteLabel}邀请` : "",
-    inviteNamed ? "点名接力" : "",
-    relayRelation ? `上一站关系：${relayRelation}` : "",
-  ].filter(Boolean);
-  const context = contextParts.length > 0 ? `${contextParts.join(" / ")}。` : "";
-  const description = `来自编队码 ${shareBy} 的接力邀请。${context}完成测试后生成你的机体和第 ${nextDepth} 站编队码。`;
+  const preview = getSharePreview({
+    shareBy,
+    shareUnit,
+    relayDepth: sourceDepth,
+    inviteTarget,
+    inviteLabel,
+    relayRelation,
+    inviteNamed,
+    shareId,
+  });
   const ogImageUrl = buildRelayOgImageUrl({
     shareBy,
     shareUnit,
     relayDepth: sourceDepth,
+    inviteTarget,
     inviteLabel,
     relayRelation,
     inviteNamed,
+    shareId,
   });
 
   return {
-    title,
-    description,
+    title: preview.title,
+    description: preview.description,
     openGraph: {
-      title,
-      description,
+      title: preview.title,
+      description: preview.description,
       type: "website",
       locale: "zh_CN",
       siteName: "EVA-Covenant",
@@ -98,14 +104,14 @@ export async function generateMetadata(
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: "EVA 编队接力分享卡片",
+          alt: preview.ogAlt,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: preview.title,
+      description: preview.description,
       images: [ogImageUrl],
     },
   };

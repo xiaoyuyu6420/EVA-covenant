@@ -20,6 +20,7 @@ export interface HistoryItem {
   timestamp: number;
   result: FullResult;
   relaySourceCode?: string;
+  relaySourceUnit?: string;
   relayRootCode?: string;
   relayDepth?: number;
 }
@@ -47,6 +48,7 @@ function getCurrentRelayContext() {
   const sourceDepth = getPositiveRelayDepth(params);
   return {
     relaySourceCode,
+    relaySourceUnit: getQueryParam(params, "share_unit", 80),
     relayRootCode: getQueryParam(params, "relay_root") ?? getQueryParam(params, "relay_from") ?? relaySourceCode,
     relayDepth: Math.min(sourceDepth + 1, 99),
   };

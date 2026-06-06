@@ -38,11 +38,12 @@ function getHistoryMeta(item: HistoryItem) {
   const dimensionLabels = getFormationDimensionLabels(topDimensions, GRADE_LABELS);
   const relayDepth = normalizeRelayDepth(item.relayDepth);
   const relayRoot = item.relayRootCode ?? item.relaySourceCode;
+  const displayName = getResultDisplayName(result.top);
   const shareUrl = buildShareUrl(formationCode, item.relaySourceCode, relayRoot, relayDepth, {
+    shareUnit: displayName,
     inviteTarget: HISTORY_INVITE_TARGET,
     inviteLabel: HISTORY_INVITE_LABEL,
   });
-  const displayName = getResultDisplayName(result.top);
 
   const shareText = [
     `我的 EVA 适格记录：${displayName}`,
@@ -99,6 +100,7 @@ export default function HistoryClient() {
       channel: "history_copy",
       code: item.result.top.code,
       unit: meta.displayName,
+      shareUnit: meta.displayName,
       formationCode: meta.formationCode,
       relayFrom: item.relaySourceCode,
       relayRoot: meta.relayRoot,
@@ -115,6 +117,7 @@ export default function HistoryClient() {
         channel: "history_copy",
         code: item.result.top.code,
         unit: meta.displayName,
+        shareUnit: meta.displayName,
         formationCode: meta.formationCode,
         relayFrom: item.relaySourceCode,
         relayRoot: meta.relayRoot,

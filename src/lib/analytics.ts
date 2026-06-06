@@ -12,6 +12,7 @@ export type AttributionContext = {
   utmSource?: string;
   utmMedium?: string;
   shareBy?: string;
+  shareUnit?: string;
   relayFrom?: string;
   relayRoot?: string;
   relayDepth?: number;
@@ -21,6 +22,7 @@ export type AttributionContext = {
 };
 
 export type ShareUrlOptions = {
+  shareUnit?: string;
   inviteTarget?: string;
   inviteLabel?: string;
   relayRelation?: string;
@@ -62,6 +64,7 @@ export function getAttribution(): AttributionContext {
   return {
     utmSource: getParam(params, "utm_source", 80),
     shareBy: getParam(params, "share_by"),
+    shareUnit: getParam(params, "share_unit", 80),
     utmMedium: getParam(params, "utm_medium", 80),
     relayFrom: getParam(params, "relay_from"),
     relayRoot: getParam(params, "relay_root"),
@@ -95,6 +98,7 @@ export function buildShareUrl(
   url.searchParams.set("utm_campaign", "formation_relay");
   url.searchParams.set("share_by", shareBy);
   url.searchParams.set("relay_depth", depth.toString());
+  if (options?.shareUnit) url.searchParams.set("share_unit", options.shareUnit);
   if (upstream && upstream !== shareBy) url.searchParams.set("relay_from", upstream);
   if (root && root !== shareBy) url.searchParams.set("relay_root", root);
   if (options?.inviteTarget) url.searchParams.set("invite_target", options.inviteTarget);
@@ -114,6 +118,7 @@ export function trackEvent(event: EventName, meta?: Record<string, unknown>) {
     sessionId: getSessionId(),
     meta: {
       shareBy: attribution.shareBy,
+      sourceShareUnit: attribution.shareUnit,
       utmMedium: attribution.utmMedium,
       relayFrom: attribution.relayFrom,
       relayRoot: attribution.relayRoot,

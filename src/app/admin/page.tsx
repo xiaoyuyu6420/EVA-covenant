@@ -89,7 +89,7 @@ interface Analytics {
   recentEvents: {
     id: number; event: string; page: string | null;
     utmSource: string | null; sessionId: string | null;
-    code: string | null; unit: string | null; channel: string | null;
+    code: string | null; unit: string | null; shareUnit: string | null; sourceShareUnit: string | null; channel: string | null;
     formationCode: string | null; shareBy: string | null;
     inviteTarget: string | null; inviteLabel: string | null; relayRelation: string | null;
     sourceInviteTarget: string | null; sourceInviteLabel: string | null; sourceRelayRelation: string | null;
@@ -551,7 +551,14 @@ function RecordsPanel() {
               {data.recentEvents.map((event) => (
                 <tr key={event.id} className="border-b border-[#1e1b2e] hover:bg-[#1e1b2e]/50">
                   <td className="py-2 px-3 text-[#e2e8f0]">{EVENT_LABELS[event.event] ?? event.event}</td>
-                  <td className="py-2 px-3 text-[#94a3b8]">{event.unit ?? event.code ?? "—"}</td>
+                  <td className="py-2 px-3 text-[#94a3b8]">
+                    {event.unit ?? event.shareUnit ?? event.code ?? "—"}
+                    {event.sourceShareUnit && event.sourceShareUnit !== event.unit && (
+                      <span className="block text-[10px] text-[#64748b]">
+                        SRC {event.sourceShareUnit}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 px-3 eva-text text-[#64748b]">
                     {channelLabel(event.channel)}
                     {(event.inviteLabel || event.relayRelation || event.sourceInviteLabel || event.sourceRelayRelation) && (

@@ -269,6 +269,8 @@ export async function GET() {
         sessionId: e.sessionId,
         code: typeof meta.code === "string" ? meta.code : null,
         unit: typeof meta.unit === "string" ? meta.unit : null,
+        shareUnit: typeof meta.shareUnit === "string" ? meta.shareUnit : null,
+        sourceShareUnit: typeof meta.sourceShareUnit === "string" ? meta.sourceShareUnit : null,
         channel: typeof meta.channel === "string" ? meta.channel : null,
         formationCode: typeof meta.formationCode === "string" ? meta.formationCode : null,
         inviteTarget: typeof meta.inviteTarget === "string" ? meta.inviteTarget : null,

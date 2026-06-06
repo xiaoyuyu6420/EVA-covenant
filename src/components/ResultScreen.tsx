@@ -768,12 +768,14 @@ export default function ResultScreen({
     : "";
   const relayRelation = getRelayRelation(formationCode, relaySourceCode);
   const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+    shareUnit: profile.displayName,
     relayRelation: relayRelation?.label,
   });
   const primaryDimensionCode = primaryDimension ? DIMENSIONS[primaryDimension.index].code : "CORE";
   const primaryDimensionName = primaryDimension ? DIMENSIONS[primaryDimension.index].name : "核心指标";
   const buildInviteShareUrl = (inviteTarget: RelayInviteKey, inviteLabel: string) =>
     buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+      shareUnit: profile.displayName,
       inviteTarget,
       inviteLabel,
       relayRelation: relayRelation?.label,
@@ -892,6 +894,7 @@ export default function ResultScreen({
       channel,
       code: top.code,
       unit: profile.displayName,
+      shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
@@ -907,6 +910,7 @@ export default function ResultScreen({
         channel,
         code: top.code,
         unit: profile.displayName,
+        shareUnit: profile.displayName,
         formationCode,
         relayFrom: relaySourceCode,
         relayRoot: effectiveRelayRootCode,
@@ -925,6 +929,7 @@ export default function ResultScreen({
           channel: "native",
           code: top.code,
           unit: profile.displayName,
+          shareUnit: profile.displayName,
           formationCode,
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
@@ -940,6 +945,7 @@ export default function ResultScreen({
           channel: "native",
           code: top.code,
           unit: profile.displayName,
+          shareUnit: profile.displayName,
           formationCode,
           relayFrom: relaySourceCode,
           relayRoot: effectiveRelayRootCode,
@@ -963,6 +969,7 @@ export default function ResultScreen({
       channel,
       code: top.code,
       unit: profile.displayName,
+      shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
@@ -1023,6 +1030,7 @@ export default function ResultScreen({
       channel: "return_copy",
       code: top.code,
       unit: profile.displayName,
+      shareUnit: profile.displayName,
       formationCode,
       relayFrom: relaySourceCode,
       relayRoot: effectiveRelayRootCode,
@@ -1038,6 +1046,7 @@ export default function ResultScreen({
         channel: "return_copy",
         code: top.code,
         unit: profile.displayName,
+        shareUnit: profile.displayName,
         formationCode,
         relayFrom: relaySourceCode,
         relayRoot: effectiveRelayRootCode,

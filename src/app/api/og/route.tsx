@@ -24,6 +24,7 @@ function getRelayDepth(params: URLSearchParams) {
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams;
   const shareBy = getParam(params, "share_by", "DIRECT", 96);
+  const shareUnit = getParam(params, "share_unit", "EVA UNIT", 80);
   const inviteLabel = getParam(params, "invite_label", "下一站", 32);
   const relayRelation = getParam(params, "relay_relation", "FORMATION OPEN", 40);
   const nextDepth = Math.min(getRelayDepth(params) + 1, 99);
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
   const nodeText = `NODE ${nodeLabel}`;
   const detailRows = [
     { label: "INVITE MODE", value: inviteLabel, color: "#7cff00" },
+    { label: "SOURCE UNIT", value: shareUnit, color: "#f5f5f5" },
     { label: "SOURCE CODE", value: shareBy, color: "#f27405" },
     { label: "RELATION", value: relayRelation, color: "#a78bfa" },
   ];
@@ -145,7 +147,7 @@ export async function GET(req: NextRequest) {
               width: 362,
               display: "flex",
               flexDirection: "column",
-              gap: 16,
+              gap: 12,
             }}
           >
             {detailRows.map(({ label, value, color }) => (
@@ -155,7 +157,7 @@ export async function GET(req: NextRequest) {
                   border: "2px solid rgba(255,255,255,0.12)",
                   borderLeft: `8px solid ${color}`,
                   background: "rgba(0,0,0,0.42)",
-                  padding: "18px 20px",
+                  padding: "14px 18px",
                   display: "flex",
                   flexDirection: "column",
                 }}
@@ -167,7 +169,7 @@ export async function GET(req: NextRequest) {
                   style={{
                     display: "flex",
                     color: "#f5f5f5",
-                    fontSize: value.length > 28 ? 22 : 27,
+                    fontSize: value.length > 28 ? 21 : 25,
                     lineHeight: 1.18,
                     marginTop: 10,
                     fontWeight: 800,

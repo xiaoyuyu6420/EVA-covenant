@@ -68,6 +68,7 @@ export default function HomeClient() {
       trackedRelayCode.current = currentAttribution.shareBy;
       trackEvent("relay_entry", {
         formationCode: currentAttribution.shareBy,
+        sourceShareUnit: currentAttribution.shareUnit,
         relayFrom: currentAttribution.relayFrom,
         relayRoot: currentAttribution.relayRoot,
         relayDepth: currentAttribution.relayDepth ?? 1,
@@ -89,10 +90,20 @@ export default function HomeClient() {
       isSpecial: result.top.isSpecial,
       isBoundary: result.top.isBoundary,
       relayFrom: attribution.shareBy,
+      sourceShareUnit: attribution.shareUnit,
       relayRoot: attribution.relayRoot ?? attribution.relayFrom,
       relayDepth: currentRelayDepth,
     });
-  }, [attribution.relayDepth, attribution.relayFrom, attribution.relayRoot, attribution.shareBy, currentRelayDepth, result, screen]);
+  }, [
+    attribution.relayDepth,
+    attribution.relayFrom,
+    attribution.relayRoot,
+    attribution.shareBy,
+    attribution.shareUnit,
+    currentRelayDepth,
+    result,
+    screen,
+  ]);
 
   const handleStartTest = useCallback(() => {
     trackEvent("quiz_start");
@@ -116,6 +127,7 @@ export default function HomeClient() {
           <WelcomeScreen
             onStart={handleStartTest}
             inviteCode={attribution.shareBy}
+            shareUnit={attribution.shareUnit}
             relayFrom={attribution.relayFrom}
             relayDepth={attribution.relayDepth}
             inviteLabel={attribution.inviteLabel}

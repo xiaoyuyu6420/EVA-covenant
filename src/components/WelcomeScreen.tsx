@@ -9,6 +9,7 @@ import LangSelector from "./LangSelector";
 interface Props {
   onStart: () => void;
   inviteCode?: string;
+  shareUnit?: string;
   relayFrom?: string;
   relayDepth?: number;
   inviteLabel?: string;
@@ -33,6 +34,7 @@ function requestDocumentFullscreen() {
 export default function WelcomeScreen({
   onStart,
   inviteCode,
+  shareUnit,
   relayFrom,
   relayDepth,
   inviteLabel,
@@ -44,7 +46,7 @@ export default function WelcomeScreen({
   const t = useT();
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
   const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
-  const hasInviteContext = Boolean(inviteLabel || relayRelation);
+  const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation);
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), 400);
@@ -167,7 +169,17 @@ export default function WelcomeScreen({
             </p>
           </div>
           {hasInviteContext && (
-            <div className={`mb-3 grid gap-2 ${inviteLabel && relayRelation ? "grid-cols-2" : "grid-cols-1"}`}>
+            <div className="mb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-2">
+              {shareUnit && (
+                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0 min-[430px]:col-span-2">
+                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    SOURCE UNIT
+                  </p>
+                  <p className="mt-1 text-[0.9rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                    {shareUnit}
+                  </p>
+                </div>
+              )}
               {inviteLabel && (
                 <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
                   <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>

@@ -26,12 +26,14 @@ function cleanRelayDepth(value: string | string[] | undefined) {
 
 function buildRelayOgImageUrl(params: {
   shareBy: string;
+  shareUnit?: string;
   relayDepth?: number;
   inviteLabel?: string;
   relayRelation?: string;
 }) {
   const url = new URL("/api/og", getSiteUrl());
   url.searchParams.set("share_by", params.shareBy);
+  if (params.shareUnit) url.searchParams.set("share_unit", params.shareUnit);
   if (params.relayDepth) url.searchParams.set("relay_depth", params.relayDepth.toString());
   if (params.inviteLabel) url.searchParams.set("invite_label", params.inviteLabel);
   if (params.relayRelation) url.searchParams.set("relay_relation", params.relayRelation);
@@ -43,6 +45,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const params = await searchParams;
   const shareBy = cleanParam(params.share_by);
+  const shareUnit = cleanParam(params.share_unit, 80);
   const sourceDepth = cleanRelayDepth(params.relay_depth);
   const inviteLabel = cleanParam(params.invite_label, 40);
   const relayRelation = cleanParam(params.relay_relation, 40);
@@ -57,6 +60,7 @@ export async function generateMetadata(
   const nextDepth = Math.min((sourceDepth ?? 1) + 1, 99);
   const title = "EVA 编队接力 | NERV-HQ";
   const contextParts = [
+    shareUnit ? `上一站机体：${shareUnit}` : "",
     inviteLabel ? `${inviteLabel}邀请` : "",
     relayRelation ? `上一站关系：${relayRelation}` : "",
   ].filter(Boolean);
@@ -64,6 +68,7 @@ export async function generateMetadata(
   const description = `来自编队码 ${shareBy} 的接力邀请。${context}完成测试后生成你的机体和第 ${nextDepth} 站编队码。`;
   const ogImageUrl = buildRelayOgImageUrl({
     shareBy,
+    shareUnit,
     relayDepth: sourceDepth,
     inviteLabel,
     relayRelation,

@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useQuiz } from "@/hooks/useQuiz";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import TestScreen from "@/components/TestScreen";
 import ResultScreen from "@/components/ResultScreen";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Home() {
   const {
     screen, currentQ, progress, totalQ, qList, result, dimScores, userGrades,
     startTest, handleAnswer, restart,
   } = useQuiz();
+  const trackedResultCode = useRef<string | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (screen !== "test") return;
@@ -27,6 +29,30 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  useEffect(() => {
+    trackEvent("page_view");
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "result" || !result) return;
+    const resultKey = `${result.top.code}-${result.top.similarity}`;
+    if (trackedResultCode.current === resultKey) return;
+
+    trackedResultCode.current = resultKey;
+    trackEvent("quiz_complete", {
+      code: result.top.code,
+      unit: result.top.evaUnit,
+      similarity: result.top.similarity,
+      isSpecial: result.top.isSpecial,
+      isBoundary: result.top.isBoundary,
+    });
+  }, [result, screen]);
+
+  const handleStartTest = useCallback(() => {
+    trackEvent("quiz_start");
+    startTest();
+  }, [startTest]);
+
   return (
     <div
       className="w-full max-w-[600px] h-dvh max-h-[900px] bg-[var(--card)] relative
@@ -40,7 +66,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden pt-3 pb-4"
         style={{ scrollbarWidth: "none" }}
       >
-        {screen === "welcome" && <WelcomeScreen onStart={startTest} />}
+        {screen === "welcome" && <WelcomeScreen onStart={handleStartTest} />}
         {screen === "loading" && (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-[var(--nerv-orange)] border-t-transparent rounded-full animate-spin" />

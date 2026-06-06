@@ -244,7 +244,9 @@ export function useQuiz() {
         saveResult(r);
         clearProgress();
 
-        fetch("/api/results", {
+        const attributionQuery = typeof window !== "undefined" ? window.location.search : "";
+
+        fetch(`/api/results${attributionQuery}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

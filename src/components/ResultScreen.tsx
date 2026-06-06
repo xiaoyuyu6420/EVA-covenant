@@ -2,9 +2,10 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
-import { Copy, RotateCcw } from "lucide-react";
+import { Copy, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
+import { buildShareUrl, trackEvent } from "@/lib/analytics";
 
 interface Props {
   result: FullResult;
@@ -39,6 +40,23 @@ type ResultProfile = {
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
 const GRADE_VALUE: Record<Grade, number> = { L: 0, M: 1, H: 2, X: 3 };
+const DIMENSION_CHAIN_PROMPTS = [
+  "同步感很强的人，测完通常会有完全不同的机体解释。",
+  "压力越大越冷静的人，结果很容易和你形成反差。",
+  "边界感很明显的人，适合拿来对照 AT 力场。",
+  "遇事先推进的人，能看出你们谁更像前锋。",
+  "先看方案和数据的人，适合对照作战风格。",
+  "关键时刻会拍板的人，结果通常很有辨识度。",
+  "能听出别人没说出口的人，适合对照共鸣侧。",
+  "一个人也能待很久的人，孤独倾向会拉开差距。",
+  "情绪表达很直接的人，能测出完全不同的外显方式。",
+  "习惯把责任扛起来的人，适合看谁会先上机。",
+  "很在意自我边界的人，适合对照适格样本感。",
+  "总会追问意义的人，容易测到高存在追问。",
+  "习惯自己解决问题的人，适合看独立性差异。",
+  "不轻易相信系统的人，适合对照 NERV 信任度。",
+  "场面一乱就会接管的人，适合看谁更像指挥位。",
+];
 
 const THEMES: Record<string, Theme> = {
   unit00: {
@@ -602,6 +620,29 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
       })
       .slice(0, 4);
   }, [dimScores, userGrades]);
+  const topDimensionLabels = topDimensions
+    .slice(0, 3)
+    .map((d) => `${DIMENSIONS[d.index].code}${GRADE_LABELS[d.grade]}`)
+    .join("/");
+  const topDimensionCodes = topDimensions
+    .slice(0, 3)
+    .map((d) => `${DIMENSIONS[d.index].code}${d.grade}`)
+    .join("-");
+  const primaryDimension = topDimensions[0];
+  const invitePrompt = primaryDimension
+    ? DIMENSION_CHAIN_PROMPTS[primaryDimension.index]
+    : "让一个和你差异很大的人测一次，结果最容易拉开。";
+  const formationCode = `${profile.marker}-${top.code}-${topDimensionCodes || "SYNC"}`.replace(/\s+/g, "").toUpperCase();
+  const shareUrl = buildShareUrl(formationCode);
+  const shareText = [
+    `我测到：${profile.displayName}`,
+    profile.shareLine,
+    `编队码：${formationCode}`,
+    topDimensionLabels ? `高位指标：${topDimensionLabels}` : "",
+    invitePrompt,
+    "你测完把机体和编队码发我，看能不能凑一支 EVA 编队。",
+    shareUrl,
+  ].filter(Boolean).join("\n");
 
   const themeStyle = {
     "--unit-bg": profile.theme.bg,
@@ -613,21 +654,55 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
     "--unit-glow": profile.theme.glow,
   } as CSSProperties;
 
-  const copyResult = async () => {
-    const text = [
-      `我的 EVA 适格机体：${profile.displayName}`,
-      profile.modelName,
-      `同步率：${top.similarity.toFixed(1)}%`,
-      profile.shareLine,
-    ].join("\n");
+  const copyResult = async (channel: "copy" | "fallback" = "copy") => {
+    trackEvent("share_click", {
+      channel,
+      code: top.code,
+      unit: profile.displayName,
+      formationCode,
+    });
 
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(shareText);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
+      trackEvent("share_success", {
+        channel,
+        code: top.code,
+        unit: profile.displayName,
+        formationCode,
+      });
     } catch {
       setCopied(false);
     }
+  };
+
+  const shareResult = async () => {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        trackEvent("share_click", {
+          channel: "native",
+          code: top.code,
+          unit: profile.displayName,
+          formationCode,
+        });
+        await navigator.share({
+          title: "EVA 适格机体测试",
+          text: shareText,
+          url: shareUrl || undefined,
+        });
+        trackEvent("share_success", {
+          channel: "native",
+          code: top.code,
+          unit: profile.displayName,
+          formationCode,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await copyResult("fallback");
   };
 
   return (
@@ -820,10 +895,65 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
       </motion.section>
 
       <motion.section
+        className="px-5 py-5 border-b border-white/10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.32, duration: 0.4 }}
+      >
+        <div
+          className="border border-white/10 p-4"
+          style={{
+            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
+          }}
+        >
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
+              FORMATION CODE
+            </h2>
+            <span className="text-[0.66rem] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+              COMPARE
+            </span>
+          </div>
+
+          <div
+            className="min-h-[48px] border border-white/10 px-3 py-2 flex items-center"
+            style={{ background: "rgba(0,0,0,0.28)" }}
+          >
+            <p
+              className="text-[1.05rem] min-[430px]:text-[1.18rem] leading-[1.25] break-all"
+              style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+            >
+              {formationCode}
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-end">
+            <p className="text-[0.92rem] leading-[1.7] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+              {invitePrompt}
+              <span className="block mt-1 text-[#aaa]">让对方回传机体和编队码，差异会比单看结果更明显。</span>
+            </p>
+            <div className="flex gap-2 sm:justify-end">
+              {topDimensions.slice(0, 3).map((d) => (
+                <span
+                  key={`chain-${DIMENSIONS[d.index].code}`}
+                  className="min-w-[52px] h-8 px-2 border border-white/10 flex items-center justify-center text-[0.68rem]"
+                  style={{ color: "var(--unit-secondary)", background: "rgba(0,0,0,0.2)", fontFamily: "var(--font-tech)" }}
+                >
+                  {DIMENSIONS[d.index].code}
+                  {GRADE_LABELS[d.grade]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
         className="px-5 py-5"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.36, duration: 0.4 }}
+        transition={{ delay: 0.38, duration: 0.4 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
@@ -867,15 +997,23 @@ export default function ResultScreen({ result, onRestart, dimScores, userGrades 
       </motion.section>
 
       <motion.div
-        className="grid grid-cols-2 gap-3 px-5 pb-8 pt-2"
+        className="grid grid-cols-1 min-[430px]:grid-cols-3 gap-3 px-5 pb-8 pt-2"
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.44, duration: 0.35 }}
+        transition={{ delay: 0.46, duration: 0.35 }}
       >
         <button
-          onClick={copyResult}
+          onClick={shareResult}
           className="h-12 border text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
           style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+        >
+          <Share2 size={15} aria-hidden="true" />
+          SHARE
+        </button>
+        <button
+          onClick={() => copyResult("copy")}
+          className="h-12 border border-white/15 text-[#aaa] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+          style={{ fontFamily: "var(--font-tech)" }}
         >
           <Copy size={15} aria-hidden="true" />
           {copied ? "COPIED" : "COPY"}

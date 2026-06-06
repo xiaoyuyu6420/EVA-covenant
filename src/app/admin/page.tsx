@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { DIMENSIONS, ALGO_PARAMS } from "@/lib/types";
+import { DIMENSIONS } from "@/lib/types";
 
 type Tab = "stats" | "records" | "questions" | "types" | "import";
 type ContentLang = "zh-CN" | "en" | "ja" | "ko" | "zh-TW";
@@ -70,11 +70,34 @@ interface Stats {
 interface Analytics {
   utmStats: { source: string | null; count: number }[];
   deviceCounts: { mobile: number; desktop: number; other: number };
+  eventCounts: { event: string; count: number }[];
+  eventUtmStats: { source: string | null; event: string; count: number }[];
+  recentEvents: {
+    id: number; event: string; page: string | null;
+    utmSource: string | null; sessionId: string | null;
+    code: string | null; unit: string | null; channel: string | null;
+    formationCode: string | null; shareBy: string | null;
+    createdAt: string;
+  }[];
   recentRecords: {
     id: number; code: string; similarity: number;
     isSpecial: boolean; isBoundary: boolean;
     utmSource: string | null; createdAt: string;
   }[];
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  page_view: "访问",
+  quiz_start: "开始",
+  quiz_complete: "完成",
+  share_click: "点击分享",
+  share_success: "分享成功",
+};
+
+const FUNNEL_EVENTS = ["page_view", "quiz_start", "quiz_complete", "share_click", "share_success"];
+
+function sourceLabel(source: string | null) {
+  return source ?? "直接";
 }
 
 interface QuestionRow {
@@ -230,17 +253,125 @@ function RecordsPanel() {
 
   if (!data) return <Loading />;
 
+  const eventCountMap = new Map(data.eventCounts.map((event) => [event.event, event.count]));
+  const maxEventCount = Math.max(...FUNNEL_EVENTS.map((event) => eventCountMap.get(event) ?? 0), 1);
+  const maxUtmCount = Math.max(...data.utmStats.map((item) => item.count), 1);
+  const maxEventUtmCount = Math.max(...data.eventUtmStats.map((item) => item.count), 1);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">DEVICE DISTRIBUTION — 设备分布</h3>
+          <div className="flex gap-6">
+            {Object.entries(data.deviceCounts).map(([device, count]) => (
+              <div key={device} className="text-center">
+                <p className="text-2xl font-bold text-[#7c3aed]">{count}</p>
+                <p className="nerv-label mt-1">{device}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">EVENT FUNNEL — 传播漏斗</h3>
+          <div className="space-y-2">
+            {FUNNEL_EVENTS.map((event) => {
+              const count = eventCountMap.get(event) ?? 0;
+              return (
+                <div key={event} className="flex items-center gap-3">
+                  <span className="w-20 text-xs text-[#94a3b8]">{EVENT_LABELS[event]}</span>
+                  <div className="flex-1 h-5 bg-[#1e1b2e] rounded overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#7c3aed] to-[#4ade80] rounded"
+                      style={{ width: `${Math.max((count / maxEventCount) * 100, count > 0 ? 5 : 0)}%` }}
+                    />
+                  </div>
+                  <span className="w-10 text-right text-xs eva-text text-[#4ade80]">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">RESULT SOURCE — 测试来源</h3>
+          <div className="space-y-2">
+            {data.utmStats.map((item) => (
+              <div key={item.source ?? "direct"} className="flex items-center gap-3">
+                <span className="w-28 text-xs eva-text text-[#94a3b8] truncate">{sourceLabel(item.source)}</span>
+                <div className="flex-1 h-5 bg-[#1e1b2e] rounded overflow-hidden">
+                  <div
+                    className="h-full bg-[#7c3aed] rounded"
+                    style={{ width: `${Math.max((item.count / maxUtmCount) * 100, 5)}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-xs eva-text text-[#4ade80]">{item.count}</span>
+              </div>
+            ))}
+            {data.utmStats.length === 0 && (
+              <p className="text-[#64748b] text-sm text-center py-4">暂无来源数据</p>
+            )}
+          </div>
+        </div>
+
+        <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+          <h3 className="nerv-label mb-4">SHARE SOURCE — 分享来源事件</h3>
+          <div className="space-y-2">
+            {data.eventUtmStats.map((item) => (
+              <div key={`${item.source ?? "direct"}-${item.event}`} className="flex items-center gap-3">
+                <span className="w-28 text-xs eva-text text-[#94a3b8] truncate">{sourceLabel(item.source)}</span>
+                <span className="w-20 text-xs text-[#64748b]">{EVENT_LABELS[item.event] ?? item.event}</span>
+                <div className="flex-1 h-5 bg-[#1e1b2e] rounded overflow-hidden">
+                  <div
+                    className="h-full bg-[#4ade80] rounded"
+                    style={{ width: `${Math.max((item.count / maxEventUtmCount) * 100, 5)}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-xs eva-text text-[#4ade80]">{item.count}</span>
+              </div>
+            ))}
+            {data.eventUtmStats.length === 0 && (
+              <p className="text-[#64748b] text-sm text-center py-4">暂无分享来源事件</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
-        <h3 className="nerv-label mb-4">DEVICE DISTRIBUTION — 设备分布</h3>
-        <div className="flex gap-6">
-          {Object.entries(data.deviceCounts).map(([device, count]) => (
-            <div key={device} className="text-center">
-              <p className="text-2xl font-bold text-[#7c3aed]">{count}</p>
-              <p className="nerv-label mt-1">{device}</p>
-            </div>
-          ))}
+        <h3 className="nerv-label mb-4">RECENT SHARE EVENTS — 最近传播事件</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#2a2a3e]">
+                <th className="text-left py-2 px-3 nerv-label">事件</th>
+                <th className="text-left py-2 px-3 nerv-label">机体</th>
+                <th className="text-left py-2 px-3 nerv-label">渠道</th>
+                <th className="text-left py-2 px-3 nerv-label">编队码</th>
+                <th className="text-left py-2 px-3 nerv-label">来源</th>
+                <th className="text-left py-2 px-3 nerv-label">时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentEvents.map((event) => (
+                <tr key={event.id} className="border-b border-[#1e1b2e] hover:bg-[#1e1b2e]/50">
+                  <td className="py-2 px-3 text-[#e2e8f0]">{EVENT_LABELS[event.event] ?? event.event}</td>
+                  <td className="py-2 px-3 text-[#94a3b8]">{event.unit ?? event.code ?? "—"}</td>
+                  <td className="py-2 px-3 eva-text text-[#64748b]">{event.channel ?? "—"}</td>
+                  <td className="py-2 px-3 eva-text text-[#4ade80]">{event.formationCode ?? event.shareBy ?? "—"}</td>
+                  <td className="py-2 px-3 eva-text text-[#64748b]">{sourceLabel(event.utmSource)}</td>
+                  <td className="py-2 px-3 eva-text text-[#64748b] text-xs">
+                    {new Date(event.createdAt).toLocaleString("zh-CN")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {data.recentEvents.length === 0 && (
+            <p className="text-[#64748b] text-sm text-center py-8">暂无传播事件</p>
+          )}
         </div>
       </div>
 
@@ -293,21 +424,6 @@ const GRADE_INFO = [
   { grade: "H", range: "7-8", label: "高", color: "#4ade80" },
   { grade: "X", range: "9",   label: "极高", color: "#f97316" },
 ];
-
-function getDimInfo(dimCode: string) {
-  return DIMENSIONS.find((d) => d.code === dimCode);
-}
-
-function getDimQuestions(questions: QuestionRow[], dimCode: string) {
-  return questions.filter((q) => q.dimCode === dimCode && !q.isGate && !q.isTrigger);
-}
-
-function getDimTotalScore(questions: QuestionRow[], dimCode: string) {
-  return getDimQuestions(questions, dimCode)
-    .flatMap((q) => q.options)
-    .filter((o) => o.score > 0)
-    .reduce((max, o) => Math.max(max, o.score), 0);
-}
 
 // ===== 题目面板（可编辑） =====
 function QuestionsPanel() {
@@ -450,7 +566,7 @@ function QuestionsPanel() {
             placeholder={placeholder}
             onChange={(e) => {
               if (isZh) {
-                editData && setEditData({ ...editData, text: e.target.value });
+                if (editData) setEditData({ ...editData, text: e.target.value });
               } else {
                 updateQTrans("text", e.target.value);
               }

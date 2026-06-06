@@ -46,19 +46,21 @@ export default function WelcomeScreen({
   const [pilotCount, setPilotCount] = useState<number | null>(null);
   const [showFSModal, setShowFSModal] = useState(false);
   const t = useT();
+  const isRelayEntry = Boolean(inviteCode);
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
   const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
   const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation || inviteNamed);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setBootPhase(1), 400);
-    const t2 = setTimeout(() => setBootPhase(2), 1000);
-    const t3 = setTimeout(() => setBootPhase(3), 1800);
-    const t4 = setTimeout(() => setBootPhase(4), 2600);
+    const t1 = setTimeout(() => setBootPhase(1), isRelayEntry ? 120 : 400);
+    const t2 = setTimeout(() => setBootPhase(2), isRelayEntry ? 260 : 1000);
+    const t3 = setTimeout(() => setBootPhase(3), isRelayEntry ? 420 : 1800);
+    const t4 = setTimeout(() => setBootPhase(4), isRelayEntry ? 620 : 2600);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
-  }, []);
+  }, [isRelayEntry]);
 
   useEffect(() => {
+    if (isRelayEntry) return;
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as NavigatorWithStandalone).standalone === true;
@@ -66,7 +68,7 @@ export default function WelcomeScreen({
       const timer = setTimeout(() => setShowFSModal(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isRelayEntry]);
 
   useEffect(() => {
     fetch("/api/stats")
@@ -105,7 +107,7 @@ export default function WelcomeScreen({
 
       {/* Title */}
       <motion.div
-        className="my-6 text-center"
+        className={isRelayEntry ? "my-4 text-center" : "my-6 text-center"}
         initial={{ opacity: 0, y: -20 }}
         animate={bootPhase >= 2 ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8 }}
@@ -135,7 +137,7 @@ export default function WelcomeScreen({
         transition={{ duration: 0.6 }}
       >
         <p className="text-[#ccc] text-[0.95rem] font-bold leading-[1.7] tracking-wide">
-          {t("welcome.desc").split("\n").map((line, i) => (
+          {(isRelayEntry ? t("welcome.relayHeroDesc") : t("welcome.desc")).split("\n").map((line, i) => (
             <React.Fragment key={i}>{i > 0 && <br />}{line}</React.Fragment>
           ))}
         </p>
@@ -235,6 +237,22 @@ export default function WelcomeScreen({
           <p className="text-[0.92rem] leading-[1.7] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
             {t("welcome.relayDesc")}
           </p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              ["01", t("welcome.relayStep1")],
+              ["02", t("welcome.relayStep2")],
+              ["03", t("welcome.relayStep3")],
+            ].map(([step, label]) => (
+              <div key={step} className="border border-white/10 bg-black/20 px-2 py-2 text-center">
+                <p className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                  STEP {step}
+                </p>
+                <p className="mt-1 text-[0.78rem] leading-tight text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
           {relayFrom && (
             <p className="mt-2 text-[0.68rem] tracking-[0.14em] text-[#777]" style={{ fontFamily: "var(--font-tech)" }}>
               {t("welcome.relayUpstream")} {relayFrom}
@@ -274,10 +292,10 @@ export default function WelcomeScreen({
         animate={bootPhase >= 4 ? { opacity: 1 } : {}}
         transition={{ duration: 0.6 }}
       >
-        <div className="mb-1">{t("welcome.status1")}</div>
-        <div className="mb-1">{t("welcome.status2")}</div>
-        <div className="mb-1">{t("welcome.status3")}</div>
-        <div>{t("welcome.status4")}</div>
+        <div className="mb-1">{isRelayEntry ? t("welcome.relayStatus1") : t("welcome.status1")}</div>
+        <div className="mb-1">{isRelayEntry ? t("welcome.relayStatus2") : t("welcome.status2")}</div>
+        <div className="mb-1">{isRelayEntry ? t("welcome.relayStatus3") : t("welcome.status3")}</div>
+        <div>{isRelayEntry ? t("welcome.relayStatus4") : t("welcome.status4")}</div>
       </motion.div>
 
       {/* Start button */}

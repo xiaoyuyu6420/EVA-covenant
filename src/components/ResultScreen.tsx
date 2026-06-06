@@ -6,6 +6,7 @@ import { Copy, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { buildShareUrl, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
+import { buildFormationCodeFromDimensions, getFormationDimensionLabels, rankTopDimensions } from "@/lib/formation";
 
 interface Props {
   result: FullResult;
@@ -68,7 +69,6 @@ type RelayInviteOption = {
 
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
-const GRADE_VALUE: Record<Grade, number> = { L: 0, M: 1, H: 2, X: 3 };
 const DIMENSION_NAMES: Map<string, string> = new Map(DIMENSIONS.map((dimension) => [dimension.code, dimension.name]));
 const DIMENSION_CHAIN_PROMPTS = [
   "同步感很强的人，测完通常会有完全不同的机体解释。",
@@ -738,30 +738,14 @@ export default function ResultScreen({
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
-    if (!userGrades) return [];
-    return userGrades
-      .map((grade, index) => ({ grade, index, score: dimScores[index] ?? 0 }))
-      .sort((a, b) => {
-        if (GRADE_VALUE[b.grade] !== GRADE_VALUE[a.grade]) {
-          return GRADE_VALUE[b.grade] - GRADE_VALUE[a.grade];
-        }
-        return b.score - a.score;
-      })
-      .slice(0, 4);
+    return rankTopDimensions(userGrades, dimScores, 4);
   }, [dimScores, userGrades]);
-  const topDimensionLabels = topDimensions
-    .slice(0, 3)
-    .map((d) => `${DIMENSIONS[d.index].code}${GRADE_LABELS[d.grade]}`)
-    .join("/");
-  const topDimensionCodes = topDimensions
-    .slice(0, 3)
-    .map((d) => `${DIMENSIONS[d.index].code}${d.grade}`)
-    .join("-");
+  const topDimensionLabels = getFormationDimensionLabels(topDimensions, GRADE_LABELS);
   const primaryDimension = topDimensions[0];
   const invitePrompt = primaryDimension
     ? DIMENSION_CHAIN_PROMPTS[primaryDimension.index]
     : "让一个和你差异很大的人测一次，结果最容易拉开。";
-  const formationCode = `${profile.marker}-${top.code}-${topDimensionCodes || "SYNC"}`.replace(/\s+/g, "").toUpperCase();
+  const formationCode = buildFormationCodeFromDimensions(profile.marker, top.code, topDimensions);
   const effectiveRelayRootCode = relayRootCode ?? relaySourceCode;
   const currentRelayDepth = normalizeRelayDepth(relayDepth);
   const relayNodeLabel = currentRelayDepth.toString().padStart(2, "0");

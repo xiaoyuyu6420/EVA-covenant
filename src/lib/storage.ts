@@ -3,6 +3,7 @@ import type { FullResult } from "./types";
 
 const STORAGE_KEY = "eva-covenant";
 const HISTORY_KEY = `${STORAGE_KEY}-results`;
+const HISTORY_EVENT = `${STORAGE_KEY}-history-change`;
 
 interface StorageData {
   currentQuestion: number;
@@ -18,6 +19,59 @@ export interface HistoryItem {
   id: string;
   timestamp: number;
   result: FullResult;
+  relaySourceCode?: string;
+  relayRootCode?: string;
+  relayDepth?: number;
+}
+
+function getQueryParam(params: URLSearchParams, key: string, maxLength = 120) {
+  const value = params.get(key)?.trim();
+  return value ? value.slice(0, maxLength) : undefined;
+}
+
+function getPositiveRelayDepth(params: URLSearchParams) {
+  const raw = params.get("relay_depth");
+  if (!raw) return 1;
+  const depth = Number.parseInt(raw, 10);
+  if (!Number.isFinite(depth) || depth < 1) return 1;
+  return Math.min(depth, 99);
+}
+
+function getCurrentRelayContext() {
+  if (typeof window === "undefined") return {};
+
+  const params = new URLSearchParams(window.location.search);
+  const relaySourceCode = getQueryParam(params, "share_by");
+  if (!relaySourceCode) return { relayDepth: 1 };
+
+  const sourceDepth = getPositiveRelayDepth(params);
+  return {
+    relaySourceCode,
+    relayRootCode: getQueryParam(params, "relay_root") ?? getQueryParam(params, "relay_from") ?? relaySourceCode,
+    relayDepth: Math.min(sourceDepth + 1, 99),
+  };
+}
+
+function notifyHistoryChange() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(HISTORY_EVENT));
+}
+
+export function subscribeHistory(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  window.addEventListener(HISTORY_EVENT, callback);
+  window.addEventListener("storage", callback);
+
+  return () => {
+    window.removeEventListener(HISTORY_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+export function getHistorySnapshot() {
+  if (typeof window === "undefined") return "[]";
+  return localStorage.getItem(HISTORY_KEY) ?? "[]";
 }
 
 export function loadProgress(): StorageData | null {
@@ -44,10 +98,12 @@ export function clearProgress(): void {
 export function saveResult(result: FullResult): void {
   if (typeof window === "undefined") return;
   const history = loadHistory();
+  const relayContext = getCurrentRelayContext();
   const item: HistoryItem = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: Date.now(),
     result,
+    ...relayContext,
   };
   history.push(item);
   // 最多保留50条
@@ -55,6 +111,7 @@ export function saveResult(result: FullResult): void {
     history.shift();
   }
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  notifyHistoryChange();
 }
 
 /** 加载所有历史记录 */
@@ -72,6 +129,7 @@ export function loadHistory(): HistoryItem[] {
 export function clearHistory(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(HISTORY_KEY);
+  notifyHistoryChange();
 }
 
 /** 删除单条历史记录 */
@@ -79,6 +137,7 @@ export function removeHistoryItem(id: string): void {
   if (typeof window === "undefined") return;
   const history = loadHistory().filter((item) => item.id !== id);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  notifyHistoryChange();
 }
 
 /** 向后兼容：获取旧版历史 */

@@ -5,7 +5,13 @@ import { useQuiz } from "@/hooks/useQuiz";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import TestScreen from "@/components/TestScreen";
 import ResultScreen from "@/components/ResultScreen";
-import { getAttribution, normalizeRelayDepth, trackEvent, type AttributionContext } from "@/lib/analytics";
+import {
+  getAttribution,
+  normalizeAttributionUrl,
+  normalizeRelayDepth,
+  trackEvent,
+  type AttributionContext,
+} from "@/lib/analytics";
 
 const EMPTY_ATTRIBUTION: AttributionContext = {};
 let attributionCacheKey = "";
@@ -74,6 +80,10 @@ export default function HomeClient() {
         relayDepth: currentAttribution.relayDepth ?? 1,
         nextRelayDepth: normalizeRelayDepth((currentAttribution.relayDepth ?? 1) + 1),
       });
+    }
+
+    if (normalizeAttributionUrl()) {
+      attributionCacheKey = "";
     }
   }, []);
 

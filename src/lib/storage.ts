@@ -1,5 +1,6 @@
 import { DIMENSIONS } from "./types";
 import type { FullResult } from "./types";
+import { getAttribution } from "./analytics";
 
 const STORAGE_KEY = "eva-covenant";
 const HISTORY_KEY = `${STORAGE_KEY}-results`;
@@ -41,15 +42,16 @@ function getPositiveRelayDepth(params: URLSearchParams) {
 function getCurrentRelayContext() {
   if (typeof window === "undefined") return {};
 
+  const attribution = getAttribution();
   const params = new URLSearchParams(window.location.search);
-  const relaySourceCode = getQueryParam(params, "share_by");
+  const relaySourceCode = attribution.shareBy ?? getQueryParam(params, "share_by");
   if (!relaySourceCode) return { relayDepth: 1 };
 
-  const sourceDepth = getPositiveRelayDepth(params);
+  const sourceDepth = attribution.relayDepth ?? getPositiveRelayDepth(params);
   return {
     relaySourceCode,
-    relaySourceUnit: getQueryParam(params, "share_unit", 80),
-    relayRootCode: getQueryParam(params, "relay_root") ?? getQueryParam(params, "relay_from") ?? relaySourceCode,
+    relaySourceUnit: attribution.shareUnit ?? getQueryParam(params, "share_unit", 80),
+    relayRootCode: attribution.relayRoot ?? attribution.relayFrom ?? getQueryParam(params, "relay_root") ?? getQueryParam(params, "relay_from") ?? relaySourceCode,
     relayDepth: Math.min(sourceDepth + 1, 99),
   };
 }

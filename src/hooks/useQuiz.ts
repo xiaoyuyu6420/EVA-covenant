@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { matchPersonality, scoresToGrades, type MatchInput } from "@/lib/match-engine";
 import { loadProgress, saveProgress, clearProgress, saveResult } from "@/lib/storage";
+import { getAttribution } from "@/lib/analytics";
 import type { FullResult, Grade } from "@/lib/types";
 import { DIMENSIONS, type DimCode } from "@/lib/types";
 import { useI18n } from "@/lib/i18n/context";
@@ -243,10 +244,9 @@ export function useQuiz() {
         setScreen("result");
         saveResult(r);
         clearProgress();
+        const attribution = getAttribution();
 
-        const attributionQuery = typeof window !== "undefined" ? window.location.search : "";
-
-        fetch(`/api/results${attributionQuery}`, {
+        fetch("/api/results", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -259,6 +259,7 @@ export function useQuiz() {
             gateAnswer: newGate,
             triggerAnswer: newTrigger,
             answers: logCopy,
+            attribution,
           }),
         }).catch(() => {});
       }, 2500);

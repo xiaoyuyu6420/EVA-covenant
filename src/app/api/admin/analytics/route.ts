@@ -65,6 +65,19 @@ type ConversionStat = {
   branchReady: number;
 };
 
+type ShareLinkConversionStat = ConversionStat & {
+  linkId: string;
+  clicks: number;
+  successes: number;
+  channel: string | null;
+  shareUnit: string | null;
+  formationCode: string | null;
+  inviteTarget: string | null;
+  inviteLabel: string | null;
+  relayRelation: string | null;
+  relayDepth: number | null;
+};
+
 type RelayHealth = {
   shareSuccesses: number;
   relayEntries: number;
@@ -90,6 +103,55 @@ function createConversionStat(label: string): ConversionStat {
     reshares: 0,
     branchReady: 0,
   };
+}
+
+function createShareLinkConversionStat(linkId: string): ShareLinkConversionStat {
+  return {
+    ...createConversionStat(linkId),
+    linkId,
+    clicks: 0,
+    successes: 0,
+    channel: null,
+    shareUnit: null,
+    formationCode: null,
+    inviteTarget: null,
+    inviteLabel: null,
+    relayRelation: null,
+    relayDepth: null,
+  };
+}
+
+function getShareLinkConversionStat(map: Map<string, ShareLinkConversionStat>, linkId: string) {
+  const current = map.get(linkId) ?? createShareLinkConversionStat(linkId);
+  map.set(linkId, current);
+  return current;
+}
+
+function applyShareLinkOwnMeta(stat: ShareLinkConversionStat, meta: Record<string, unknown>) {
+  const inviteLabel = getMetaString(meta, "inviteLabel");
+  const shareUnit = getMetaString(meta, "shareUnit");
+
+  stat.channel ??= getMetaString(meta, "channel");
+  stat.shareUnit ??= shareUnit;
+  stat.formationCode ??= getMetaString(meta, "formationCode");
+  stat.inviteTarget ??= getMetaString(meta, "inviteTarget");
+  stat.inviteLabel ??= inviteLabel;
+  stat.relayRelation ??= getMetaString(meta, "relayRelation");
+  stat.relayDepth ??= parseRelayDepth(meta.relayDepth);
+  stat.label = inviteLabel ?? shareUnit ?? stat.label;
+}
+
+function applyShareLinkSourceMeta(stat: ShareLinkConversionStat, meta: Record<string, unknown>) {
+  const sourceInviteLabel = getMetaString(meta, "sourceInviteLabel");
+  const sourceShareUnit = getMetaString(meta, "sourceShareUnit");
+
+  stat.shareUnit ??= sourceShareUnit;
+  stat.formationCode ??= getMetaString(meta, "shareBy");
+  stat.inviteTarget ??= getMetaString(meta, "sourceInviteTarget");
+  stat.inviteLabel ??= sourceInviteLabel;
+  stat.relayRelation ??= getMetaString(meta, "sourceRelayRelation");
+  stat.relayDepth ??= parseRelayDepth(meta.relayDepth);
+  stat.label = sourceInviteLabel ?? sourceShareUnit ?? stat.label;
 }
 
 function incrementConversionStat(stat: ConversionStat, event: string) {
@@ -119,6 +181,39 @@ function toConversionRows(map: Map<string, ConversionStat>) {
       b.starts - a.starts ||
       b.relayEntries - a.relayEntries ||
       b.reshares - a.reshares
+    );
+}
+
+function toShareLinkConversionRows(map: Map<string, ShareLinkConversionStat>) {
+  return Array.from(map.values())
+    .map((value) => ({
+      shareId: value.linkId,
+      label: value.label,
+      channel: value.channel,
+      shareUnit: value.shareUnit,
+      formationCode: value.formationCode,
+      inviteTarget: value.inviteTarget,
+      inviteLabel: value.inviteLabel,
+      relayRelation: value.relayRelation,
+      relayDepth: value.relayDepth,
+      clicks: value.clicks,
+      successes: value.successes,
+      relayEntries: value.relayEntries,
+      starts: value.starts,
+      completes: value.completes,
+      reshares: value.reshares,
+      branchReady: value.branchReady,
+      entryRate: toRate(value.relayEntries, value.successes),
+      startRate: toRate(value.starts, value.relayEntries),
+      completionRate: toRate(value.completes, value.starts),
+      reshareRate: toRate(value.reshares, value.completes),
+      branchReadyRate: toRate(value.branchReady, value.completes),
+    }))
+    .sort((a, b) =>
+      b.completes - a.completes ||
+      b.relayEntries - a.relayEntries ||
+      b.successes - a.successes ||
+      b.clicks - a.clicks
     );
 }
 
@@ -208,11 +303,20 @@ export async function GET() {
   const inviteTargetMap = new Map<string, { label: string; clicks: number; successes: number }>();
   const relayRelationMap = new Map<string, { clicks: number; successes: number }>();
   const namedInviteMap = new Map<string, { clicks: number; successes: number }>();
+  const shareLinkConversionMap = new Map<string, ShareLinkConversionStat>();
 
   for (const event of shareEvents) {
     const meta = parseMeta(event.meta);
     const channel = getMetaString(meta, "channel") ?? "unknown";
     incrementShareStat(shareChannelMap, channel, event.event);
+
+    const shareId = getMetaString(meta, "shareId");
+    if (shareId) {
+      const current = getShareLinkConversionStat(shareLinkConversionMap, shareId);
+      applyShareLinkOwnMeta(current, meta);
+      if (event.event === "share_click") current.clicks++;
+      if (event.event === "share_success") current.successes++;
+    }
 
     const inviteTarget = getMetaString(meta, "inviteTarget");
     if (inviteTarget) {
@@ -306,6 +410,13 @@ export async function GET() {
       incrementConversionStat(current, event.event);
       namedInviteConversionMap.set("named", current);
     }
+
+    const sourceShareId = getMetaString(meta, "sourceShareId");
+    if (sourceShareId) {
+      const current = getShareLinkConversionStat(shareLinkConversionMap, sourceShareId);
+      applyShareLinkSourceMeta(current, meta);
+      incrementConversionStat(current, event.event);
+    }
   }
 
   relayHealth.activeRoots = activeRelayRoots.size;
@@ -343,6 +454,7 @@ export async function GET() {
       .sort(([a], [b]) => a - b)
       .map(([depth, count]) => ({ depth, count })),
     relayHealth,
+    shareLinkConversionStats: toShareLinkConversionRows(shareLinkConversionMap).slice(0, 50),
     shareChannelStats: toShareStatRows(shareChannelMap).map((item) => ({
       channel: item.key,
       clicks: item.clicks,
@@ -419,6 +531,8 @@ export async function GET() {
         unit: typeof meta.unit === "string" ? meta.unit : null,
         shareUnit: typeof meta.shareUnit === "string" ? meta.shareUnit : null,
         sourceShareUnit: typeof meta.sourceShareUnit === "string" ? meta.sourceShareUnit : null,
+        shareId: getMetaString(meta, "shareId"),
+        sourceShareId: getMetaString(meta, "sourceShareId"),
         channel: typeof meta.channel === "string" ? meta.channel : null,
         formationCode: typeof meta.formationCode === "string" ? meta.formationCode : null,
         inviteTarget: typeof meta.inviteTarget === "string" ? meta.inviteTarget : null,

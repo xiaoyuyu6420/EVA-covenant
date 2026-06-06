@@ -88,6 +88,29 @@ interface Analytics {
     reshareRate: number | null;
     branchReadyRate: number | null;
   };
+  shareLinkConversionStats: {
+    shareId: string;
+    label: string;
+    channel: string | null;
+    shareUnit: string | null;
+    formationCode: string | null;
+    inviteTarget: string | null;
+    inviteLabel: string | null;
+    relayRelation: string | null;
+    relayDepth: number | null;
+    clicks: number;
+    successes: number;
+    relayEntries: number;
+    starts: number;
+    completes: number;
+    reshares: number;
+    branchReady: number;
+    entryRate: number | null;
+    startRate: number | null;
+    completionRate: number | null;
+    reshareRate: number | null;
+    branchReadyRate: number | null;
+  }[];
   shareChannelStats: { channel: string; clicks: number; successes: number; successRate: number | null }[];
   inviteTargetStats: { target: string; label: string; clicks: number; successes: number; successRate: number | null }[];
   namedInviteStats: { key: string; label: string; clicks: number; successes: number; successRate: number | null }[];
@@ -132,6 +155,7 @@ interface Analytics {
     id: number; event: string; page: string | null;
     utmSource: string | null; sessionId: string | null;
     code: string | null; unit: string | null; shareUnit: string | null; sourceShareUnit: string | null; channel: string | null;
+    shareId: string | null; sourceShareId: string | null;
     formationCode: string | null; shareBy: string | null;
     inviteTarget: string | null; inviteLabel: string | null; relayRelation: string | null;
     sourceInviteTarget: string | null; sourceInviteLabel: string | null; sourceRelayRelation: string | null;
@@ -370,6 +394,14 @@ function RecordsPanel() {
     item.branchReady,
   ]), 1);
   const maxSourceUnitConversionCount = Math.max(...data.sourceUnitConversionStats.flatMap((item) => [
+    item.relayEntries,
+    item.starts,
+    item.completes,
+    item.reshares,
+    item.branchReady,
+  ]), 1);
+  const maxShareLinkConversionCount = Math.max(...data.shareLinkConversionStats.flatMap((item) => [
+    item.successes,
     item.relayEntries,
     item.starts,
     item.completes,
@@ -701,6 +733,68 @@ function RecordsPanel() {
       </div>
 
       <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
+        <h3 className="nerv-label mb-4">SHARE LINK CONVERSION — 单条链接转化</h3>
+        <div className="space-y-4">
+          {data.shareLinkConversionStats.map((item) => (
+            <div key={item.shareId} className="space-y-2 border-b border-[#1e1b2e] last:border-b-0 pb-4 last:pb-0">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs eva-text text-[#94a3b8] truncate">
+                    {item.inviteLabel ?? item.label}
+                    {item.shareUnit ? <span className="text-[#64748b]"> · {item.shareUnit}</span> : null}
+                  </p>
+                  <p className="mt-1 text-[10px] eva-text text-[#64748b] break-all">
+                    {item.shareId}
+                    {item.formationCode ? ` / ${item.formationCode}` : ""}
+                    {item.relayDepth ? ` / NODE ${String(item.relayDepth).padStart(2, "0")}` : ""}
+                  </p>
+                </div>
+                <div className="text-right text-xs eva-text text-[#4ade80]">
+                  <p>完成 {item.completes}/{item.starts} · {rateLabel(item.completionRate)}</p>
+                  <p className="mt-1 text-[#64748b]">进入率 {rateLabel(item.entryRate)} / 再分享 {rateLabel(item.reshareRate)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {([
+                  ["分享", item.successes, "#4ade80"],
+                  ["进入", item.relayEntries, "#38bdf8"],
+                  ["开始", item.starts, "#7c3aed"],
+                  ["完成", item.completes, "#22c55e"],
+                  ["再分享", item.reshares, "#f97316"],
+                  ["2路", item.branchReady, "#facc15"],
+                ] as [string, number, string][]).map(([label, count, color]) => (
+                  <div key={label} className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] text-[#64748b]">{label}</span>
+                      <span className="text-[10px] eva-text text-[#e2e8f0]">{count}</span>
+                    </div>
+                    <div className="h-3 bg-[#1e1b2e] rounded overflow-hidden">
+                      <div
+                        className="h-full rounded"
+                        style={{
+                          backgroundColor: color,
+                          width: `${Math.max((count / maxShareLinkConversionCount) * 100, count > 0 ? 8 : 0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] eva-text text-[#64748b]">
+                <span>渠道：{channelLabel(item.channel)}</span>
+                <span>邀请：{item.inviteTarget ?? "—"}</span>
+                <span>关系：{item.relayRelation ?? "—"}</span>
+                <span>点击/成功：{item.clicks}/{item.successes}</span>
+              </div>
+            </div>
+          ))}
+          {data.shareLinkConversionStats.length === 0 && (
+            <p className="text-[#64748b] text-sm text-center py-4">暂无单条链接转化数据</p>
+          )}
+        </div>
+      </div>
+
+      <div className="eva-border rounded-lg p-5 bg-[#0a0a12]/90">
         <h3 className="nerv-label mb-4">SOURCE UNIT CONVERSION — 上一站机体转化</h3>
         <div className="space-y-3">
           {data.sourceUnitConversionStats.map((item) => (
@@ -786,6 +880,11 @@ function RecordsPanel() {
                     {event.inviteTargets && (
                       <span className="block text-[10px] text-[#facc15]">
                         BRANCH {event.inviteTargets}
+                      </span>
+                    )}
+                    {(event.shareId || event.sourceShareId) && (
+                      <span className="block text-[10px] text-[#64748b] break-all">
+                        LINK {event.shareId ?? event.sourceShareId}
                       </span>
                     )}
                   </td>

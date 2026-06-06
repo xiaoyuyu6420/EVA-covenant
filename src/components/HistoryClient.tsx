@@ -22,6 +22,11 @@ const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "
 const HISTORY_INVITE_TARGET = "history";
 const HISTORY_INVITE_LABEL = "历史再发";
 
+function getHistoryShareId(itemId: string) {
+  const cleanId = itemId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 48);
+  return `history_${cleanId || "local"}`;
+}
+
 function formatDate(timestamp: number) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "2-digit",
@@ -31,7 +36,7 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
-function getHistoryMeta(item: HistoryItem) {
+function getHistoryMeta(item: HistoryItem, shareId: string) {
   const result = item.result;
   const formationCode = buildFormationCode(result);
   const topDimensions = rankTopDimensions(result.userVector, result.userScores, 3);
@@ -40,6 +45,7 @@ function getHistoryMeta(item: HistoryItem) {
   const relayRoot = item.relayRootCode ?? item.relaySourceCode;
   const displayName = getResultDisplayName(result.top);
   const shareUrl = buildShareUrl(formationCode, item.relaySourceCode, relayRoot, relayDepth, {
+    shareId,
     shareUnit: displayName,
     inviteTarget: HISTORY_INVITE_TARGET,
     inviteLabel: HISTORY_INVITE_LABEL,
@@ -60,6 +66,7 @@ function getHistoryMeta(item: HistoryItem) {
     displayName,
     relayDepth,
     relayRoot,
+    shareId,
     shareUrl,
     shareText,
   };
@@ -92,12 +99,16 @@ export default function HistoryClient() {
   }, []);
 
   const latestItem = items[0];
-  const latestMeta = useMemo(() => latestItem ? getHistoryMeta(latestItem) : null, [latestItem]);
+  const latestMeta = useMemo(
+    () => latestItem ? getHistoryMeta(latestItem, getHistoryShareId(latestItem.id)) : null,
+    [latestItem]
+  );
 
   const copyRelay = async (item: HistoryItem, channel = "history_copy") => {
-    const meta = getHistoryMeta(item);
+    const meta = getHistoryMeta(item, getHistoryShareId(item.id));
     trackEvent("share_click", {
       channel,
+      shareId: meta.shareId,
       code: item.result.top.code,
       unit: meta.displayName,
       shareUnit: meta.displayName,
@@ -115,6 +126,7 @@ export default function HistoryClient() {
       window.setTimeout(() => setCopiedId(null), 1600);
       trackEvent("share_success", {
         channel,
+        shareId: meta.shareId,
         code: item.result.top.code,
         unit: meta.displayName,
         shareUnit: meta.displayName,
@@ -131,12 +143,13 @@ export default function HistoryClient() {
   };
 
   const shareRelay = async (item: HistoryItem) => {
-    const meta = getHistoryMeta(item);
+    const meta = getHistoryMeta(item, getHistoryShareId(item.id));
 
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         trackEvent("share_click", {
           channel: "history_native",
+          shareId: meta.shareId,
           code: item.result.top.code,
           unit: meta.displayName,
           shareUnit: meta.displayName,
@@ -156,6 +169,7 @@ export default function HistoryClient() {
         window.setTimeout(() => setCopiedId(null), 1600);
         trackEvent("share_success", {
           channel: "history_native",
+          shareId: meta.shareId,
           code: item.result.top.code,
           unit: meta.displayName,
           shareUnit: meta.displayName,
@@ -254,7 +268,7 @@ export default function HistoryClient() {
 
             <div className="flex flex-col gap-3">
               {items.map((item) => {
-                const meta = getHistoryMeta(item);
+                const meta = getHistoryMeta(item, getHistoryShareId(item.id));
                 return (
                   <article
                     key={item.id}

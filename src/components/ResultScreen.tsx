@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Copy, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
-import { buildShareUrl, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
+import { buildShareUrl, createShareId, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
 import { buildFormationCodeFromDimensions, getFormationDimensionLabels, rankTopDimensions } from "@/lib/formation";
 
 interface Props {
@@ -61,6 +61,7 @@ type RelayInviteKey = "general" | "contrast" | "same_axis" | "verify";
 
 type RelayInviteOption = {
   key: RelayInviteKey;
+  shareId: string;
   label: string;
   title: string;
   target: string;
@@ -778,7 +779,10 @@ export default function ResultScreen({
     ? `我接入了 ${relaySourceUnit ? `${relaySourceUnit} / ` : ""}${relaySourceCode} 的编队，现在作为第 ${currentRelayDepth} 站回传。`
     : "";
   const relayRelation = getRelayRelation(formationCode, relaySourceCode);
+  const resultShareId = useMemo(() => createShareId("result"), []);
+  const returnShareId = useMemo(() => createShareId("return"), []);
   const shareUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+    shareId: resultShareId,
     shareUnit: profile.displayName,
     relayRelation: relayRelation?.label,
   });
@@ -788,18 +792,32 @@ export default function ResultScreen({
   const hasNamedInvite = inviteName.length > 0;
   const inviteAddress = hasNamedInvite ? `${inviteName}，` : "";
   const inviteSubject = hasNamedInvite ? inviteName : "TA";
-  const buildInviteShareUrl = (inviteTarget: RelayInviteKey, inviteLabel: string) =>
+  const inviteShareIds = useMemo(() => ({
+    general: createShareId(hasNamedInvite ? "invite_general_named" : "invite_general"),
+    contrast: createShareId(hasNamedInvite ? "invite_contrast_named" : "invite_contrast"),
+    same_axis: createShareId(hasNamedInvite ? "invite_same_axis_named" : "invite_same_axis"),
+    verify: createShareId(hasNamedInvite ? "invite_verify_named" : "invite_verify"),
+  } satisfies Record<RelayInviteKey, string>), [hasNamedInvite]);
+  const buildInviteShareUrl = (inviteTarget: RelayInviteKey, inviteLabel: string, shareId: string) =>
     buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+      shareId,
       shareUnit: profile.displayName,
       inviteTarget,
       inviteLabel,
       relayRelation: relayRelation?.label,
       inviteNamed: hasNamedInvite,
     });
-  const generalInviteUrl = buildInviteShareUrl("general", "下一站");
-  const contrastInviteUrl = buildInviteShareUrl("contrast", "反差位");
-  const sameAxisInviteUrl = buildInviteShareUrl("same_axis", "同轴位");
-  const verifyInviteUrl = buildInviteShareUrl("verify", "校验位");
+  const generalInviteUrl = buildInviteShareUrl("general", "下一站", inviteShareIds.general);
+  const contrastInviteUrl = buildInviteShareUrl("contrast", "反差位", inviteShareIds.contrast);
+  const sameAxisInviteUrl = buildInviteShareUrl("same_axis", "同轴位", inviteShareIds.same_axis);
+  const verifyInviteUrl = buildInviteShareUrl("verify", "校验位", inviteShareIds.verify);
+  const returnUrl = buildShareUrl(formationCode, relaySourceCode, effectiveRelayRootCode, currentRelayDepth, {
+    shareId: returnShareId,
+    shareUnit: profile.displayName,
+    inviteTarget: "general",
+    inviteLabel: "回传下一站",
+    relayRelation: relayRelation?.label,
+  });
   const shareText = [
     `我测到：${profile.displayName}`,
     profile.shareLine,
@@ -815,6 +833,7 @@ export default function ResultScreen({
   const relayInviteOptions: RelayInviteOption[] = [
     {
       key: "general",
+      shareId: inviteShareIds.general,
       label: "GENERAL",
       title: "下一站",
       target: "发给一个你想对照的人。",
@@ -832,6 +851,7 @@ export default function ResultScreen({
     },
     {
       key: "contrast",
+      shareId: inviteShareIds.contrast,
       label: "CONTRAST",
       title: "反差位",
       target: "找一个做事节奏和你明显不同的人。",
@@ -851,6 +871,7 @@ export default function ResultScreen({
     },
     {
       key: "same_axis",
+      shareId: inviteShareIds.same_axis,
       label: "SAME AXIS",
       title: "同轴位",
       target: `找一个在「${primaryDimensionName}」上可能和你很像的人。`,
@@ -868,6 +889,7 @@ export default function ResultScreen({
     },
     {
       key: "verify",
+      shareId: inviteShareIds.verify,
       label: "VERIFY",
       title: "校验位",
       target: "找一个很了解你的人。",
@@ -893,7 +915,7 @@ export default function ResultScreen({
       `编队关系：${relayRelation.label}。${relayRelation.dimensionNote}。`,
       relayRelation.description,
       "你可以再找一个和我们都不太一样的人接下一站。",
-      generalInviteUrl,
+      returnUrl,
     ].filter(Boolean).join("\n")
     : "";
 
@@ -910,6 +932,7 @@ export default function ResultScreen({
   const copyResult = async (channel: "copy" | "fallback" = "copy") => {
     trackEvent("share_click", {
       channel,
+      shareId: resultShareId,
       code: top.code,
       unit: profile.displayName,
       shareUnit: profile.displayName,
@@ -927,6 +950,7 @@ export default function ResultScreen({
       window.setTimeout(() => setCopied(false), 1600);
       trackEvent("share_success", {
         channel,
+        shareId: resultShareId,
         code: top.code,
         unit: profile.displayName,
         shareUnit: profile.displayName,
@@ -947,6 +971,7 @@ export default function ResultScreen({
       try {
         trackEvent("share_click", {
           channel: "native",
+          shareId: resultShareId,
           code: top.code,
           unit: profile.displayName,
           shareUnit: profile.displayName,
@@ -964,6 +989,7 @@ export default function ResultScreen({
         });
         trackEvent("share_success", {
           channel: "native",
+          shareId: resultShareId,
           code: top.code,
           unit: profile.displayName,
           shareUnit: profile.displayName,
@@ -989,6 +1015,7 @@ export default function ResultScreen({
   ) => {
     trackEvent(event, {
       channel,
+      shareId: invite.shareId,
       code: top.code,
       unit: profile.displayName,
       shareUnit: profile.displayName,
@@ -1024,6 +1051,7 @@ export default function ResultScreen({
         relayRelation: relayRelation?.label,
         inviteNamed: hasNamedInvite,
         inviteTargets: Array.from(nextInviteKeys).join(","),
+        shareIds: Array.from(nextInviteKeys).map((key) => inviteShareIds[key]).join(","),
       });
     }
   };
@@ -1078,6 +1106,7 @@ export default function ResultScreen({
 
     trackEvent(event, {
       channel,
+      shareId: returnShareId,
       code: top.code,
       unit: profile.displayName,
       shareUnit: profile.displayName,
@@ -1088,7 +1117,7 @@ export default function ResultScreen({
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation.label,
       inviteTarget: generalInvite.key,
-      inviteLabel: generalInvite.title,
+      inviteLabel: "回传下一站",
     });
   };
 
@@ -1116,7 +1145,7 @@ export default function ResultScreen({
         await navigator.share({
           title: "EVA 编队回传",
           text: returnText,
-          url: generalInvite.url || undefined,
+          url: returnUrl || undefined,
         });
         setReturnCopied(true);
         window.setTimeout(() => setReturnCopied(false), 1600);

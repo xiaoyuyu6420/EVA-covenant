@@ -12,6 +12,7 @@ export type EventName =
 export type AttributionContext = {
   utmSource?: string;
   utmMedium?: string;
+  shareId?: string;
   shareBy?: string;
   shareUnit?: string;
   relayFrom?: string;
@@ -24,6 +25,7 @@ export type AttributionContext = {
 };
 
 export type ShareUrlOptions = {
+  shareId?: string;
   shareUnit?: string;
   inviteTarget?: string;
   inviteLabel?: string;
@@ -39,6 +41,7 @@ const ATTRIBUTION_QUERY_KEYS = [
   "utm_source",
   "utm_medium",
   "utm_campaign",
+  "share_id",
   "share_by",
   "share_unit",
   "relay_from",
@@ -121,6 +124,12 @@ function getPositiveIntParam(params: URLSearchParams, key: string) {
   return Math.min(value, 99);
 }
 
+function cleanShareId(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim().replace(/[^a-zA-Z0-9_-]/g, "");
+  return trimmed ? trimmed.slice(0, 64) : undefined;
+}
+
 function getBooleanParam(params: URLSearchParams, key: string) {
   const raw = params.get(key);
   return raw === "1" || raw === "true" ? true : undefined;
@@ -129,6 +138,7 @@ function getBooleanParam(params: URLSearchParams, key: string) {
 function readAttributionFromParams(params: URLSearchParams): AttributionContext {
   return {
     utmSource: getParam(params, "utm_source", 80),
+    shareId: cleanShareId(params.get("share_id")),
     shareBy: getParam(params, "share_by"),
     shareUnit: getParam(params, "share_unit", 80),
     utmMedium: getParam(params, "utm_medium", 80),
@@ -181,6 +191,7 @@ function readPersistedAttribution(): AttributionContext {
 
     const attribution = {
       utmSource: cleanStoredString(stored.utmSource, 80),
+      shareId: cleanShareId(stored.shareId),
       shareBy: cleanStoredString(stored.shareBy),
       shareUnit: cleanStoredString(stored.shareUnit, 80),
       utmMedium: cleanStoredString(stored.utmMedium, 80),
@@ -261,6 +272,15 @@ export function normalizeRelayDepth(value?: number) {
   return Math.min(Math.max(Math.trunc(value), 1), 99);
 }
 
+export function createShareId(prefix = "link") {
+  const cleanPrefix = cleanShareId(prefix.toLowerCase()) ?? "link";
+  const random = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
+    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+  return cleanShareId(`${cleanPrefix}_${random}`) ?? `link_${Date.now().toString(36)}`;
+}
+
 export function buildShareUrl(
   shareBy: string,
   relayFrom?: string,
@@ -279,6 +299,8 @@ export function buildShareUrl(
   url.searchParams.set("utm_campaign", "formation_relay");
   url.searchParams.set("share_by", shareBy);
   url.searchParams.set("relay_depth", depth.toString());
+  const shareId = cleanShareId(options?.shareId);
+  if (shareId) url.searchParams.set("share_id", shareId);
   if (options?.shareUnit) url.searchParams.set("share_unit", options.shareUnit);
   if (upstream && upstream !== shareBy) url.searchParams.set("relay_from", upstream);
   if (root && root !== shareBy) url.searchParams.set("relay_root", root);
@@ -299,6 +321,7 @@ export function trackEvent(event: EventName, meta?: Record<string, unknown>) {
     utmSource: attribution.utmSource,
     sessionId: getSessionId(),
     meta: {
+      sourceShareId: attribution.shareId,
       shareBy: attribution.shareBy,
       sourceShareUnit: attribution.shareUnit,
       utmMedium: attribution.utmMedium,

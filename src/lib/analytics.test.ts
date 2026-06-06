@@ -44,6 +44,7 @@ describe("relay analytics urls", () => {
     mockWindow("https://eva.example/?share_by=UPSTREAM-01&relay_root=ROOT-00&relay_depth=2");
 
     const url = new URL(buildShareUrl("EVA01-CORE-A1", undefined, undefined, 3, {
+      shareId: "invite_test_01",
       shareUnit: "EVA 初号机",
       inviteTarget: "contrast",
       inviteLabel: "反差位",
@@ -53,6 +54,7 @@ describe("relay analytics urls", () => {
 
     expect(url.origin).toBe("https://eva.example");
     expect(url.searchParams.get("share_by")).toBe("EVA01-CORE-A1");
+    expect(url.searchParams.get("share_id")).toBe("invite_test_01");
     expect(url.searchParams.get("share_unit")).toBe("EVA 初号机");
     expect(url.searchParams.get("relay_from")).toBe("UPSTREAM-01");
     expect(url.searchParams.get("relay_root")).toBe("ROOT-00");
@@ -75,14 +77,16 @@ describe("relay analytics urls", () => {
 
   it("keeps relay attribution after cleaning share params from the address bar", () => {
     mockWindow(
-      "https://eva.example/?share_by=UPSTREAM-01&share_unit=EVA%20%E5%88%9D%E5%8F%B7%E6%9C%BA&relay_root=ROOT-00&relay_depth=2&invite_target=contrast&invite_label=%E5%8F%8D%E5%B7%AE%E4%BD%8D&relay_relation=%E5%8F%8D%E5%B7%AE%E7%BC%96%E9%98%9F&invite_named=1&keep=1"
+      "https://eva.example/?share_id=relay_123&share_by=UPSTREAM-01&share_unit=EVA%20%E5%88%9D%E5%8F%B7%E6%9C%BA&relay_root=ROOT-00&relay_depth=2&invite_target=contrast&invite_label=%E5%8F%8D%E5%B7%AE%E4%BD%8D&relay_relation=%E5%8F%8D%E5%B7%AE%E7%BC%96%E9%98%9F&invite_named=1&keep=1"
     );
 
     expect(getAttribution().shareBy).toBe("UPSTREAM-01");
+    expect(getAttribution().shareId).toBe("relay_123");
     expect(normalizeAttributionUrl()).toBe(true);
 
     expect(window.location.search).toBe("?keep=1");
     expect(getAttribution()).toMatchObject({
+      shareId: "relay_123",
       shareBy: "UPSTREAM-01",
       shareUnit: "EVA 初号机",
       relayRoot: "ROOT-00",
@@ -94,9 +98,11 @@ describe("relay analytics urls", () => {
     });
 
     const url = new URL(buildShareUrl("EVA01-CORE-A1", undefined, undefined, 3, {
+      shareId: "result_abc",
       shareUnit: "EVA 初号机",
     }));
 
+    expect(url.searchParams.get("share_id")).toBe("result_abc");
     expect(url.searchParams.get("relay_from")).toBe("UPSTREAM-01");
     expect(url.searchParams.get("relay_root")).toBe("ROOT-00");
     expect(url.searchParams.get("relay_depth")).toBe("3");

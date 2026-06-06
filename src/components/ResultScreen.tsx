@@ -880,6 +880,7 @@ export default function ResultScreen({
       `编队关系：${relayRelation.label}。${relayRelation.dimensionNote}。`,
       relayRelation.description,
       "你可以再找一个和我们都不太一样的人接下一站。",
+      generalInviteUrl,
     ].filter(Boolean).join("\n")
     : "";
 
@@ -1032,11 +1033,11 @@ export default function ResultScreen({
     await copyInvite(invite, fallbackChannel);
   };
 
-  const copyReturn = async () => {
-    if (!returnText || !relayRelation) return;
+  const trackReturnShare = (event: "share_click" | "share_success", channel: "return_copy" | "return_native" | "return_fallback") => {
+    if (!relayRelation) return;
 
-    trackEvent("share_click", {
-      channel: "return_copy",
+    trackEvent(event, {
+      channel,
       code: top.code,
       unit: profile.displayName,
       shareUnit: profile.displayName,
@@ -1046,27 +1047,47 @@ export default function ResultScreen({
       relayRoot: effectiveRelayRootCode,
       relayDepth: currentRelayDepth,
       relayRelation: relayRelation.label,
+      inviteTarget: generalInvite.key,
+      inviteLabel: generalInvite.title,
     });
+  };
+
+  const copyReturn = async (channel: "return_copy" | "return_fallback" = "return_copy", trackClick = true) => {
+    if (!returnText || !relayRelation) return;
+
+    if (trackClick) trackReturnShare("share_click", channel);
 
     try {
       await navigator.clipboard.writeText(returnText);
       setReturnCopied(true);
       window.setTimeout(() => setReturnCopied(false), 1600);
-      trackEvent("share_success", {
-        channel: "return_copy",
-        code: top.code,
-        unit: profile.displayName,
-        shareUnit: profile.displayName,
-        formationCode,
-        relayFrom: relaySourceCode,
-        sourceShareUnit: relaySourceUnit,
-        relayRoot: effectiveRelayRootCode,
-        relayDepth: currentRelayDepth,
-        relayRelation: relayRelation.label,
-      });
+      trackReturnShare("share_success", channel);
     } catch {
       setReturnCopied(false);
     }
+  };
+
+  const shareReturn = async () => {
+    if (!returnText || !relayRelation) return;
+
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        trackReturnShare("share_click", "return_native");
+        await navigator.share({
+          title: "EVA 编队回传",
+          text: returnText,
+          url: generalInvite.url || undefined,
+        });
+        setReturnCopied(true);
+        window.setTimeout(() => setReturnCopied(false), 1600);
+        trackReturnShare("share_success", "return_native");
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    await copyReturn("return_fallback");
   };
 
   return (
@@ -1364,12 +1385,12 @@ export default function ResultScreen({
                 </p>
               </div>
               <button
-                onClick={copyReturn}
+                onClick={shareReturn}
                 className="h-9 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
                 style={{ fontFamily: "var(--font-tech)" }}
               >
-                <Copy size={13} aria-hidden="true" />
-                {returnCopied ? "COPIED" : "COPY RETURN"}
+                <Share2 size={13} aria-hidden="true" />
+                {returnCopied ? "READY" : "SEND RETURN"}
               </button>
             </div>
 

@@ -154,6 +154,8 @@ function channelLabel(channel: string | null) {
     invite_fallback: "默认邀请复制兜底",
     target_invite_fallback: "定向邀请复制兜底",
     return_copy: "回传上游",
+    return_native: "回传上游系统分享",
+    return_fallback: "回传上游复制兜底",
     history_copy: "历史再发",
     history_native: "历史再发系统分享",
     history_fallback: "历史再发复制兜底",

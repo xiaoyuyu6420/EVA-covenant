@@ -67,6 +67,14 @@ type RelayInviteOption = {
   message: string;
 };
 
+type InviteShareChannel =
+  | "invite_copy"
+  | "target_invite_copy"
+  | "invite_native"
+  | "target_invite_native"
+  | "invite_fallback"
+  | "target_invite_fallback";
+
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
 const DIMENSION_NAMES: Map<string, string> = new Map(DIMENSIONS.map((dimension) => [dimension.code, dimension.name]));
@@ -919,9 +927,13 @@ export default function ResultScreen({
     await copyResult("fallback");
   };
 
-  const copyInvite = async (invite: RelayInviteOption = generalInvite) => {
-    trackEvent("share_click", {
-      channel: invite.key === "general" ? "invite_copy" : "target_invite_copy",
+  const trackInviteShare = (
+    event: "share_click" | "share_success",
+    invite: RelayInviteOption,
+    channel: InviteShareChannel
+  ) => {
+    trackEvent(event, {
+      channel,
       code: top.code,
       unit: profile.displayName,
       formationCode,
@@ -932,26 +944,48 @@ export default function ResultScreen({
       inviteTarget: invite.key,
       inviteLabel: invite.title,
     });
+  };
+
+  const copyInvite = async (
+    invite: RelayInviteOption = generalInvite,
+    channel: InviteShareChannel = invite.key === "general" ? "invite_copy" : "target_invite_copy",
+    trackClick = true
+  ) => {
+    if (trackClick) {
+      trackInviteShare("share_click", invite, channel);
+    }
 
     try {
       await navigator.clipboard.writeText(invite.message);
       setCopiedInviteKey(invite.key);
       window.setTimeout(() => setCopiedInviteKey(null), 1600);
-      trackEvent("share_success", {
-        channel: invite.key === "general" ? "invite_copy" : "target_invite_copy",
-        code: top.code,
-        unit: profile.displayName,
-        formationCode,
-        relayFrom: relaySourceCode,
-        relayRoot: effectiveRelayRootCode,
-        relayDepth: currentRelayDepth,
-        relayRelation: relayRelation?.label,
-        inviteTarget: invite.key,
-        inviteLabel: invite.title,
-      });
+      trackInviteShare("share_success", invite, channel);
     } catch {
       setCopiedInviteKey(null);
     }
+  };
+
+  const shareInvite = async (invite: RelayInviteOption = generalInvite) => {
+    const nativeChannel: InviteShareChannel = invite.key === "general" ? "invite_native" : "target_invite_native";
+    const fallbackChannel: InviteShareChannel = invite.key === "general" ? "invite_fallback" : "target_invite_fallback";
+
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        trackInviteShare("share_click", invite, nativeChannel);
+        await navigator.share({
+          title: "EVA 编队接力",
+          text: invite.message,
+        });
+        setCopiedInviteKey(invite.key);
+        window.setTimeout(() => setCopiedInviteKey(null), 1600);
+        trackInviteShare("share_success", invite, nativeChannel);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    await copyInvite(invite, fallbackChannel);
   };
 
   const copyReturn = async () => {
@@ -1386,12 +1420,12 @@ export default function ResultScreen({
             </p>
           </div>
           <button
-            onClick={() => copyInvite(generalInvite)}
+            onClick={() => shareInvite(generalInvite)}
             className="h-9 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex shrink-0 items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
             style={{ fontFamily: "var(--font-tech)" }}
           >
-            <Copy size={13} aria-hidden="true" />
-            {copiedInviteKey === "general" ? "COPIED" : "COPY INVITE"}
+            <Share2 size={13} aria-hidden="true" />
+            {copiedInviteKey === "general" ? "READY" : "SEND INVITE"}
           </button>
         </div>
 
@@ -1415,12 +1449,12 @@ export default function ResultScreen({
                   </p>
                 </div>
                 <button
-                  onClick={() => copyInvite(invite)}
+                  onClick={() => shareInvite(invite)}
                   className="h-8 min-w-[68px] px-2 border border-white/15 text-[0.58rem] tracking-[0.12em] text-[#aaa] flex shrink-0 items-center justify-center gap-1 transition-colors hover:text-white hover:border-white/30"
                   style={{ fontFamily: "var(--font-tech)" }}
                 >
-                  <Copy size={12} aria-hidden="true" />
-                  {copiedInviteKey === invite.key ? "COPIED" : "COPY"}
+                  <Share2 size={12} aria-hidden="true" />
+                  {copiedInviteKey === invite.key ? "READY" : "SEND"}
                 </button>
               </div>
               <p className="text-[0.82rem] leading-[1.65] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>

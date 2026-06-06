@@ -11,6 +11,8 @@ interface Props {
   inviteCode?: string;
   relayFrom?: string;
   relayDepth?: number;
+  inviteLabel?: string;
+  relayRelation?: string;
 }
 
 type NavigatorWithStandalone = Navigator & {
@@ -28,13 +30,21 @@ function requestDocumentFullscreen() {
   return requestFullscreen.call(el);
 }
 
-export default function WelcomeScreen({ onStart, inviteCode, relayFrom, relayDepth }: Props) {
+export default function WelcomeScreen({
+  onStart,
+  inviteCode,
+  relayFrom,
+  relayDepth,
+  inviteLabel,
+  relayRelation,
+}: Props) {
   const [bootPhase, setBootPhase] = useState(0);
   const [pilotCount, setPilotCount] = useState<number | null>(null);
   const [showFSModal, setShowFSModal] = useState(false);
   const t = useT();
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
   const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
+  const hasInviteContext = Boolean(inviteLabel || relayRelation);
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), 400);
@@ -156,6 +166,30 @@ export default function WelcomeScreen({ onStart, inviteCode, relayFrom, relayDep
               {inviteCode}
             </p>
           </div>
+          {hasInviteContext && (
+            <div className={`mb-3 grid gap-2 ${inviteLabel && relayRelation ? "grid-cols-2" : "grid-cols-1"}`}>
+              {inviteLabel && (
+                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
+                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    INVITE MODE
+                  </p>
+                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                    {inviteLabel}
+                  </p>
+                </div>
+              )}
+              {relayRelation && (
+                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
+                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    RELATION
+                  </p>
+                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
+                    {relayRelation}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           <div className="mb-3 grid grid-cols-2 gap-2">
             <div className="border border-white/10 bg-black/20 px-3 py-2">
               <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>

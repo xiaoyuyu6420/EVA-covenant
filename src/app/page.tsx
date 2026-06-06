@@ -29,6 +29,8 @@ export async function generateMetadata(
   const params = await searchParams;
   const shareBy = cleanParam(params.share_by);
   const sourceDepth = cleanRelayDepth(params.relay_depth);
+  const inviteLabel = cleanParam(params.invite_label, 40);
+  const relayRelation = cleanParam(params.relay_relation, 40);
 
   if (!shareBy) {
     return {
@@ -39,7 +41,12 @@ export async function generateMetadata(
 
   const nextDepth = Math.min((sourceDepth ?? 1) + 1, 99);
   const title = "EVA 编队接力 | NERV-HQ";
-  const description = `来自编队码 ${shareBy} 的接力邀请。完成测试后生成你的机体和第 ${nextDepth} 站编队码。`;
+  const contextParts = [
+    inviteLabel ? `${inviteLabel}邀请` : "",
+    relayRelation ? `上一站关系：${relayRelation}` : "",
+  ].filter(Boolean);
+  const context = contextParts.length > 0 ? `${contextParts.join(" / ")}。` : "";
+  const description = `来自编队码 ${shareBy} 的接力邀请。${context}完成测试后生成你的机体和第 ${nextDepth} 站编队码。`;
 
   return {
     title,

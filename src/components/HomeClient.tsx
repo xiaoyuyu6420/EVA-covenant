@@ -118,6 +118,8 @@ export default function HomeClient() {
             inviteCode={attribution.shareBy}
             relayFrom={attribution.relayFrom}
             relayDepth={attribution.relayDepth}
+            inviteLabel={attribution.inviteLabel}
+            relayRelation={attribution.relayRelation}
           />
         )}
         {screen === "loading" && (

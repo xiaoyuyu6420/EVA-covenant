@@ -77,7 +77,16 @@ type InviteShareChannel =
   | "invite_native"
   | "target_invite_native"
   | "invite_fallback"
-  | "target_invite_fallback";
+  | "target_invite_fallback"
+  | "quick_invite_copy"
+  | "quick_target_invite_copy"
+  | "quick_invite_native"
+  | "quick_target_invite_native"
+  | "quick_invite_fallback"
+  | "quick_target_invite_fallback";
+
+type InviteSharePlacement = "detail" | "quick";
+type InviteShareTransport = "copy" | "native" | "fallback";
 
 const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "极高" };
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
@@ -1056,9 +1065,19 @@ export default function ResultScreen({
     }
   };
 
+  const getInviteShareChannel = (
+    invite: RelayInviteOption,
+    transport: InviteShareTransport,
+    placement: InviteSharePlacement = "detail"
+  ) => {
+    const invitePrefix = invite.key === "general" ? "invite" : "target_invite";
+    const placementPrefix = placement === "quick" ? `quick_${invitePrefix}` : invitePrefix;
+    return `${placementPrefix}_${transport}` as InviteShareChannel;
+  };
+
   const copyInvite = async (
     invite: RelayInviteOption = generalInvite,
-    channel: InviteShareChannel = invite.key === "general" ? "invite_copy" : "target_invite_copy",
+    channel: InviteShareChannel = getInviteShareChannel(invite, "copy"),
     trackClick = true
   ) => {
     if (trackClick) {
@@ -1076,9 +1095,9 @@ export default function ResultScreen({
     }
   };
 
-  const shareInvite = async (invite: RelayInviteOption = generalInvite) => {
-    const nativeChannel: InviteShareChannel = invite.key === "general" ? "invite_native" : "target_invite_native";
-    const fallbackChannel: InviteShareChannel = invite.key === "general" ? "invite_fallback" : "target_invite_fallback";
+  const shareInvite = async (invite: RelayInviteOption = generalInvite, placement: InviteSharePlacement = "detail") => {
+    const nativeChannel = getInviteShareChannel(invite, "native", placement);
+    const fallbackChannel = getInviteShareChannel(invite, "fallback", placement);
 
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
@@ -1268,6 +1287,61 @@ export default function ResultScreen({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.12, duration: 0.4 }}
+      >
+        <div
+          className="border border-white/10 p-4"
+          style={{
+            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.22))",
+            borderLeft: "3px solid var(--unit-primary)",
+          }}
+        >
+          <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-start min-[430px]:justify-between mb-4">
+            <div className="min-w-0">
+              <p className="text-[0.62rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
+                QUICK RELAY
+              </p>
+              <p className="text-[0.92rem] leading-[1.65] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
+                先找一个人接下一站。反差越明确，编队越容易聊下去。
+              </p>
+            </div>
+            <div className="shrink-0 border border-white/10 px-3 py-2 text-right" style={{ background: "rgba(0,0,0,0.22)" }}>
+              <p className="text-[0.52rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                NODE
+              </p>
+              <p className="mt-1 text-[1.2rem] leading-none" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}>
+                {relayNodeLabel}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-2">
+            {relayInviteOptions.map((invite) => (
+              <button
+                key={`quick-${invite.key}`}
+                onClick={() => shareInvite(invite, "quick")}
+                className="min-h-[68px] border border-white/10 px-2 py-2 text-left transition-colors hover:border-white/30 flex flex-col justify-between"
+                style={{ background: "rgba(0,0,0,0.2)" }}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                    {invite.label}
+                  </span>
+                  <Share2 size={12} aria-hidden="true" style={{ color: "var(--unit-secondary)" }} />
+                </span>
+                <span className="mt-2 text-[0.88rem] leading-tight text-[#e5e5e5]" style={{ fontFamily: "var(--font-title)" }}>
+                  {copiedInviteKey === invite.key ? "READY" : invite.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        className="px-5 py-5 border-b border-white/10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.16, duration: 0.4 }}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.2)" }}>

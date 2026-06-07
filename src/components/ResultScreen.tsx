@@ -1314,6 +1314,20 @@ export default function ResultScreen({
             </div>
           </div>
 
+          <label className="mb-3 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
+            <span className="block text-[0.54rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+              DIRECT CALL
+            </span>
+            <input
+              value={inviteNameInput}
+              onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
+              maxLength={12}
+              placeholder="填一个称呼，分享会更像点名"
+              className="mt-2 h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
+              style={{ fontFamily: "var(--font-title)" }}
+            />
+          </label>
+
           <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-2">
             {relayInviteOptions.map((invite) => (
               <button

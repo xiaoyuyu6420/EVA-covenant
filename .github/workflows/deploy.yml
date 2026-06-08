@@ -7,13 +7,11 @@ on:
     branches: [master]
   workflow_dispatch:
 
-# 确保同一时间只有一个工作流在运行
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ===== Job 1: 测试 (Linux AMD64 - 与部署环境一致) =====
   test:
     runs-on: ubuntu-latest
     steps:
@@ -38,34 +36,8 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-  # ===== Job 2: 构建多平台 Docker 镜像 =====
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and export
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: eva-covenant:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ===== Job 3: 部署到服务器 =====
   deploy:
-    needs: [test, build]
+    needs: test
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
@@ -82,6 +54,14 @@ jobs:
             echo ">>> Pulling latest code..."
             git pull origin master
 
+            echo ">>> Backing up database before deploy..."
+            docker compose run --rm backup /bin/sh -c "
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S) &&
+              apk add --no-cache sqlite 2>/dev/null &&
+              sqlite3 /data/eva-covenant.db \".backup /backups/pre-deploy_$${TIMESTAMP}.db\" &&
+              echo 'Pre-deploy backup created'
+            " || echo "Pre-deploy backup skipped (first deploy or no data)"
+
             echo ">>> Building & restarting..."
             docker compose down
             docker compose up -d --build
@@ -91,7 +71,13 @@ jobs:
             docker builder prune -f
 
             echo ">>> Health check..."
-            sleep 5
-            curl -f http://localhost:3002/api/stats || exit 1
-
-            echo ">>> Deploy done!"
+            for i in 1 2 3 4 5 6; do
+              sleep 5
+              if curl -sf http://localhost:8092/api/stats > /dev/null; then
+                echo ">>> Health check passed! Deploy done."
+                exit 0
+              fi
+              echo "Attempt $i/6 failed, retrying..."
+            done
+            echo ">>> Health check failed!"
+            exit 1

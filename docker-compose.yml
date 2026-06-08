@@ -1,14 +1,58 @@
 services:
-  eva-covenant:
+  app:
     build: .
+    container_name: eva-covenant
+    restart: unless-stopped
     ports:
-      - "${PORT:-3002}:3002"
+      - "${PORT:-8092}:3002"
+    volumes:
+      - db-data:/app/prisma
     environment:
+      - NODE_ENV=production
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - ADMIN_SECRET=${ADMIN_SECRET:-eva-covenant-secret}
-    volumes:
-      - eva-data:/app/prisma
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backup:
+    image: alpine:3.19
+    container_name: eva-backup
     restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - db-data:/data:ro
+      - backup-data:/backups
+    entrypoint: >
+      /bin/sh -c "
+        apk add --no-cache sqlite &&
+        echo '[backup] Service started. Running daily backups...' &&
+        while true; do
+          TIMESTAMP=$$(date +%Y%m%d_%H%M%S) &&
+          sqlite3 /data/eva-covenant.db \".backup /backups/eva-covenant_$${TIMESTAMP}.db\" &&
+          echo \"[$$(date '+%Y-%m-%d %H:%M:%S')] Backup created: eva-covenant_$${TIMESTAMP}.db\" &&
+          find /backups -name 'eva-covenant_*.db' -mtime +30 -delete &&
+          sleep 86400;
+        done
+      "
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 volumes:
-  eva-data:
+  db-data:
+    name: eva-covenant-db
+  backup-data:
+    name: eva-covenant-backups

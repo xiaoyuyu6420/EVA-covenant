@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ${IMAGE:-ghcr.io/xiaoyuyu6420/eva-covenant:latest}
     container_name: eva-covenant
     restart: unless-stopped
     ports:

@@ -6,10 +6,11 @@ services:
     ports:
       - "${PORT:-8092}:3002"
     volumes:
-      - ./data:/app/prisma
+      - ./data:/app/data
       - ./backups:/backups
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/eva-covenant.db
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - ADMIN_SECRET=${ADMIN_SECRET:-eva-covenant-secret}
     healthcheck:

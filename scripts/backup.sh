@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-DB_PATH="/app/prisma/eva-covenant.db"
+DB_PATH="/app/data/eva-covenant.db"
 BACKUP_DIR="/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="${BACKUP_DIR}/eva-covenant_${TIMESTAMP}.db"

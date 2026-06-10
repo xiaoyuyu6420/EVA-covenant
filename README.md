@@ -49,13 +49,18 @@ docker compose up -d
 
 服务运行在 `http://localhost:8092`。
 
+**数据目录**：
+- `./data` — SQLite 数据库（bind mount）
+- `./backups` — 自动备份（bind mount）
+
 ### Docker Run
 
 ```bash
 docker run -d \
   --name eva-covenant \
   -p 8092:3002 \
-  -v eva-covenant-db:/app/prisma \
+  -v $(pwd)/data:/app/prisma \
+  -v $(pwd)/backups:/backups \
   --restart unless-stopped \
   xiaoyuyu123/eva-covenant:latest
 ```
@@ -153,8 +158,10 @@ A   B   C   D   E          5 个模型，每个 3 维度
 
 ### 数据安全
 
-- **持久化** — Docker Named Volume，容器重建不丢数据
-- **自动备份** — 每日 `sqlite3 .backup` 热备份，保留 30 天
+- **持久化** — Bind Mount (`./data`, `./backups`)，便于管理和手动备份
+- **自动备份** — 容器内每 6 小时 `sqlite3 .backup` + gzip 压缩，保留 30 个备份
+- **版本回滚** — `./scripts/deploy.sh --rollback` 一键回滚到上一版本
+- **数据库恢复** — `./scripts/restore-db.sh` 交互式选择备份恢复
 - **日志轮转** — 单文件 10MB，最多 3 个轮转
 - **健康检查** — 每 30 秒检测 `/api/stats`，异常自动重启
 
@@ -164,7 +171,13 @@ A   B   C   D   E          5 个模型，每个 3 维度
 docker compose logs -f          # 查看日志
 docker compose restart          # 重启服务
 docker compose down             # 停止服务
-docker pull xiaoyuyu123/eva-covenant:latest && docker compose up -d  # 更新
+docker compose pull && docker compose up -d  # 更新
+
+# 版本管理
+./scripts/deploy.sh --rollback  # 回滚到上一版本
+
+# 数据库恢复
+./scripts/restore-db.sh         # 交互式选择备份恢复
 ```
 
 ## 🛠 Tech Stack

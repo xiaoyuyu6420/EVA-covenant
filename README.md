@@ -30,16 +30,21 @@
 
 ## Quick Start
 
-### Docker Compose 部署（推荐）
+### 一键部署（推荐）
+
+服务器上执行一行命令，脚本会自动创建目录、下载配置、引导设置密码、配置镜像加速、拉起容器。
+
+```bash
+curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/scripts/deploy.sh | bash
+```
+
+### Docker Compose 部署
 
 适合生产环境，包含自动备份、健康检查、日志管理。
 
 ```bash
-# 克隆项目
 git clone https://github.com/xiaoyuyu6420/EVA-covenant.git
 cd EVA-covenant
-
-# 配置环境变量
 cp .env.production.example .env
 # 编辑 .env，设置管理员密码等
 

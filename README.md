@@ -1,38 +1,37 @@
-# EVA Covenant
-
 <div align="center">
 
-**新世纪福音战士主题人格测试**
+# EVA COVENANT
 
-基于加权曼哈顿距离与等级归一化算法的性格匹配系统，通过 30+ 道精选问题揭示你的 EVA 驾驶员人格。
+**新世纪福音战士人格测试**
 
-[![CI/CD](https://github.com/xiaoyuyu6420/EVA-covenant/actions/workflows/deploy.yml/badge.svg)](https://github.com/xiaoyu6420/EVA-covenant/actions/workflows/deploy.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/xiaoyuyu123/eva-covenant.svg)](https://hub.docker.com/r/xiaoyuyu123/eva-covenant)
+*基于加权曼哈顿距离与等级归一化算法的性格匹配系统*
+
+[![CI/CD](https://github.com/xiaoyuyu6420/EVA-covenant/actions/workflows/deploy.yml/badge.svg)](https://github.com/xiaoyuyu6420/EVA-covenant/actions/workflows/deploy.yml)
+[![Docker](https://img.shields.io/docker/pulls/xiaoyuyu123/eva-covenant.svg)](https://hub.docker.com/r/xiaoyuyu123/eva-covenant)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[English](#english) · [快速开始](#quick-start) · [部署文档](#production-deployment) · [算法详解](#matching-algorithm)
 
 </div>
 
-![preview](eva-preview-new.png)
+---
 
-## Key Features
+EVA Covenant 是一个新世纪福音战士主题的人格测试应用。用户回答 30+ 道精选问题，系统通过 15 维度加权评分 + 等级归一化算法，精准匹配最接近的 EVA 驾驶员人格。
 
-1. 🧠 **科学匹配算法** — 加权曼哈顿距离 + 等级归一化，15 维度精准人格画像
-2. 🎯 **动态触发系统** — 门控问题 + 三重条件检测（补完 / 初号机觉醒 / 亚当）
-3. 🌐 **多语言支持** — 中文 / English / 日本語，基于数据库的 i18n 方案
-4. 📱 **移动端优先** — NERV 橙 + EVA 紫设计系统，Framer Motion 动效
-5. 📊 **管理后台** — 题目 CRUD、Excel 导入导出、数据分析面板
-6. 🔗 **社交分享** — 结果卡片生成、分享链接转化追踪
-7. 🐳 **容器化部署** — Docker Hub 镜像、自动备份、健康检查
+## ✨ Key Features
 
-| 🎮 测试流程 | 📊 维度分析 | 🏷️ 人格卡片 |
-| --- | --- | --- |
-| 30+ 精选问题，门控触发机制 | 15 维度加权评分，等级归一化 | 个性化人格匹配 + 社交分享 |
+| | | |
+|:---:|:---:|:---:|
+| 🧠 **科学匹配** | 🎯 **动态触发** | 🌐 **多语言** |
+| 加权曼哈顿距离 + 等级归一化<br>15 维度精准人格画像 | 门控问题 + 三重条件检测<br>补完 / 初号机觉醒 / 亚当 | 中文 / English / 日本語<br>数据库驱动 i18n |
+| 📱 **移动优先** | 📊 **管理后台** | 🐳 **一键部署** |
+| NERV 橙 + EVA 紫设计系统<br>Framer Motion 动效 | 题目 CRUD + Excel 导入导出<br>数据分析面板 | Docker Hub 镜像<br>自动备份 + 健康检查 |
 
-## Quick Start
+## 🚀 Quick Start
 
 ### 一键部署（推荐）
 
-服务器上执行一行命令，脚本会自动创建目录、下载配置、引导设置密码、配置镜像加速、拉起容器。
+服务器上执行一行命令，脚本自动完成：目录创建 → 配置下载 → 密码设置 → 镜像加速 → 拉起容器。
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/scripts/deploy.sh | bash
@@ -40,24 +39,19 @@ curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/scr
 
 ### Docker Compose 部署
 
-适合生产环境，包含自动备份、健康检查、日志管理。
-
 ```bash
 git clone https://github.com/xiaoyuyu6420/EVA-covenant.git
 cd EVA-covenant
 cp .env.production.example .env
-# 编辑 .env，设置管理员密码等
-
-# 一键部署
+# 编辑 .env 设置管理员密码
 docker compose up -d
 ```
 
-服务将在 `http://localhost:8092` 启动。
+服务运行在 `http://localhost:8092`。
 
-### Docker 直接运行
+### Docker Run
 
 ```bash
-docker pull xiaoyuyu123/eva-covenant:latest
 docker run -d \
   --name eva-covenant \
   -p 8092:3002 \
@@ -69,76 +63,71 @@ docker run -d \
 ### 本地开发
 
 ```bash
-# 安装依赖
 npm ci
-
-# 生成 Prisma Client
 npx prisma generate
-
-# 初始化数据库
 npx tsx prisma/seed.ts
-
-# 启动开发服务器
 npm run dev
 ```
 
 访问 `http://localhost:3002`。
 
-## Architecture
+## 🏗 Architecture
+
+### 用户流程
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    User Flow                            │
-│                                                         │
-│  Welcome → Questions (30) → Gate (pos 19) → Trigger    │
-│      ↓                                        ↓        │
-│  Calculating ← scoresToGrades ← dimScores ← answers    │
-│      ↓                                                  │
-│  Result (matchPersonality → share)                      │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│                 CI/CD Pipeline                          │
-│                                                         │
-│  Local (master) ──push──▶ GitHub                       │
-│                              ↓                          │
-│                        GitHub Actions                   │
-│                         ┌────┴────┐                     │
-│                         │  test   │ npm ci, test, tsc   │
-│                         └────┬────┘                     │
-│                         ┌────▼────┐                     │
-│                         │  build  │ Docker → Docker Hub │
-│                         └────┬────┘                     │
-│                              ↓                          │
-│                    xiaoyuyu123/eva-covenant              │
-│                              ↓                          │
-│                    Server (docker pull)                  │
-└─────────────────────────────────────────────────────────┘
+Welcome ──▶ Questions (30) ──▶ Gate (pos 19) ──▶ Trigger
+                                    │                 │
+                              scoresToGrades    CMPL / U13G
+                                    │                 │
+                              dimScores ◀────── answers │
+                                    │                  │
+                              Calculating              │
+                                    │                  │
+                              Result ──▶ Share ◀───────┘
 ```
 
-## Matching Algorithm
+### CI/CD 流水线
+
+```
+本地 (master) ──push──▶ GitHub
+                            │
+                      GitHub Actions
+                       ┌──┴──┐
+                       │test │ npm ci · test · tsc
+                       └──┬──┘
+                       ┌──▼──┐
+                       │build│ Docker build → Docker Hub
+                       └──┬──┘
+                          │
+                 xiaoyuyu123/eva-covenant
+                          │
+                   服务器 docker pull
+```
+
+## 🧮 Matching Algorithm
 
 ### 评分流程
 
 ```
-原始分数 (0-6/维度) → 等级归一化 (4L + 4M + 4H + 3X) → 加权曼哈顿距离 → 相似度百分比
+原始分数 (0-6/维度) ──▶ 等级归一化 (4L+4M+4H+3X) ──▶ 加权曼哈顿距离 ──▶ 相似度%
 ```
 
 ### 核心参数
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| `delta` | 3% | Top1/Top2 差距阈值 |
-| `threshold` | 50% | 最低相似度（低于则回退到 ADAM） |
-| `questionsPerDim` | 2 | 每维度题目数 |
+| `delta` | 3% | Top1/Top2 差距阈值，低于此值触发边界检测 |
+| `threshold` | 50% | 最低相似度，低于此值回退到 ADAM |
+| `questionsPerDim` | 2 | 每维度题目数量 |
 | `maxScorePerQ` | 3 | 每题最高分 |
 
-### 特殊触发条件
+### 特殊触发
 
-| 类型 | 条件 |
-|------|------|
-| **CMPL（补完）** | gate="complement" + C1≥5 + A3≤4 |
-| **U13G（初号机觉醒）** | gate="transcend" + A1≥5 + D3≥5 |
+| 类型 | 触发条件 |
+|------|---------|
+| **CMPL（补完）** | gate=`complement` + C1≥5 (高共情) + A3≤4 (低边界) |
+| **U13G（初号机觉醒）** | gate=`transcend` + A1≥5 (高同步率) + D3≥5 (高存在感) |
 | **ADAM（亚当）** | 相似度 < 50% 且 Top1/Top2 差距 < 3% |
 
 ### 向量格式
@@ -146,91 +135,107 @@ npm run dev
 ```
 HML-MML-HHL-MHM-HLL
 │   │   │   │   │
-A   B   C   D   E
-│   │   │   │   │
-1-3 1-3 1-3 1-3 1-3   ← 每模型 3 维度 (L/M/H/X)
+A   B   C   D   E          5 个模型，每个 3 维度
+│   │   │   │   │          L=Low M=Medium H=High X=eXtreme
+1-3 1-3 1-3 1-3 1-3
 ```
 
-## Production Deployment
+## 🛡 Production Deployment
 
 ### 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `PORT` | 8092 | 外部访问端口 |
-| `ADMIN_PASSWORD` | admin123 | 管理后台密码 |
-| `ADMIN_SECRET` | - | Session 加密密钥 |
-| `IMAGE` | xiaoyuyu123/eva-covenant:latest | Docker 镜像地址 |
+| `PORT` | `8092` | 外部访问端口 |
+| `ADMIN_PASSWORD` | `admin123` | 管理后台密码 |
+| `ADMIN_SECRET` | 随机生成 | Session 加密密钥 |
+| `IMAGE` | `xiaoyuyu123/eva-covenant:latest` | Docker 镜像 |
 
 ### 数据安全
 
-- **持久化存储** — SQLite 数据库使用 Docker Named Volume，容器重建不丢数据
-- **自动备份** — 备份 sidecar 每日使用 `sqlite3 .backup` 热备份，保留 30 天
-- **日志轮转** — 单文件 10MB 上限，最多 3 个轮转文件
+- **持久化** — Docker Named Volume，容器重建不丢数据
+- **自动备份** — 每日 `sqlite3 .backup` 热备份，保留 30 天
+- **日志轮转** — 单文件 10MB，最多 3 个轮转
 - **健康检查** — 每 30 秒检测 `/api/stats`，异常自动重启
 
-### 服务器部署脚本
+### 常用运维
 
 ```bash
-# 使用部署脚本（首次部署）
-bash scripts/deploy.sh
+docker compose logs -f          # 查看日志
+docker compose restart          # 重启服务
+docker compose down             # 停止服务
+docker pull xiaoyuyu123/eva-covenant:latest && docker compose up -d  # 更新
 ```
 
-## Tech Stack
+## 🛠 Tech Stack
 
-| Layer | Tech |
-|-------|------|
-| Framework | Next.js 16 (App Router) + React 19 |
-| Language | TypeScript |
-| Database | SQLite + Prisma ORM |
-| UI | Tailwind CSS + shadcn/ui + Framer Motion |
-| Testing | Vitest |
-| CI/CD | GitHub Actions → Docker Hub |
-| Container | Docker + Docker Compose |
+| | |
+|---|---|
+| **Framework** | Next.js 16 (App Router) + React 19 |
+| **Language** | TypeScript |
+| **Database** | SQLite + Prisma ORM |
+| **UI** | Tailwind CSS + shadcn/ui + Framer Motion |
+| **Testing** | Vitest |
+| **CI/CD** | GitHub Actions → Docker Hub |
+| **Container** | Docker + Docker Compose |
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
 ├── app/
-│   ├── page.tsx              # 主页面
-│   ├── admin/page.tsx        # 管理后台
-│   └── api/                  # API 路由
-│       ├── quiz/route.ts     # 题目获取
-│       └── match/route.ts    # 服务端匹配
+│   ├── page.tsx                # 主页面
+│   ├── admin/page.tsx          # 管理后台
+│   └── api/
+│       ├── quiz/route.ts       # 题目接口
+│       └── match/route.ts      # 匹配接口
 ├── hooks/
-│   └── useQuiz.ts            # 测试状态机
+│   └── useQuiz.ts              # 测试状态机
 ├── lib/
-│   ├── match-engine.ts       # 匹配算法
-│   ├── types.ts              # 类型与常量
-│   ├── storage.ts            # localStorage 持久化
-│   └── i18n/                 # 国际化
+│   ├── match-engine.ts         # 匹配算法
+│   ├── types.ts                # 类型与常量
+│   ├── storage.ts              # localStorage 持久化
+│   └── i18n/                   # 国际化
 ├── components/
 │   ├── WelcomeScreen.tsx
 │   ├── TestScreen.tsx
 │   └── ResultScreen.tsx
 prisma/
-├── schema.prisma             # 数据模型
-└── seed.ts                   # 种子数据
+├── schema.prisma               # 数据模型
+└── seed.ts                     # 种子数据
 ```
 
-## Development
+## 🧪 Development
 
 ```bash
-# 运行测试
-npm run test
-
-# 类型检查
-npx tsc --noEmit
-
-# 代码检查
-npm run lint
-
-# 数据库操作
-npx prisma db push             # 应用 schema 变更
-npx tsx prisma/seed.ts         # 重新导入种子数据
+npm run test              # 运行测试
+npx tsc --noEmit          # 类型检查
+npm run lint              # 代码检查
+npx prisma db push        # 应用 schema 变更
+npx tsx prisma/seed.ts    # 导入种子数据
 ```
 
-## License
+## 🤝 Contributing
 
-MIT
+Issues 和 Pull Requests 欢迎！
+
+```bash
+git clone https://github.com/xiaoyuyu6420/EVA-covenant.git
+cd EVA-covenant
+npm ci
+npx prisma generate
+npx tsx prisma/seed.ts
+npm run dev
+```
+
+## 📄 License
+
+[MIT](LICENSE)
+
+---
+
+<div align="center">
+
+*使徒来袭之际，你将如何选择？*
+
+</div>

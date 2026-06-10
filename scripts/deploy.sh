@@ -29,7 +29,6 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 
 # --- Download with mirror fallback ---
-# 先尝试直连，失败后使用镜像加速
 download_file() {
   local path="$1"
   local output="$2"
@@ -69,8 +68,6 @@ rollback() {
 
   cd "$DEPLOY_DIR"
 
-  # 替换 docker-compose.yml 中的镜像标签
-  # 兼容 macOS (sed -i '') 和 Linux (sed -i)
   if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s|image: .*xiaoyuyu123/eva-covenant:.*|image: xiaoyuyu123/eva-covenant:${previous}|" docker-compose.yml
   else
@@ -156,28 +153,12 @@ download_file "docker-compose.yml" "docker-compose.yml"
 download_file ".env.production.example" ".env.production.example"
 ok "配置文件已下载"
 
-# --- Create .env with password ---
+# --- Environment ---
 if [ ! -f .env ]; then
-  cp .env.production.example .env
-
-  RANDOM_SECRET=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
-
-  TMP_ENV=$(mktemp)
-  awk -v secret="$RANDOM_SECRET" '{gsub(/change-me-to-a-random-secret/, secret); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-  TMP_ENV=$(mktemp)
-  awk -v pw="$ADMIN_PW" '{gsub(/change-me-to-a-strong-password/, pw); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-  TMP_ENV=$(mktemp)
-  awk -v image="$IMAGE" '{gsub(/# IMAGE=/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-  TMP_ENV=$(mktemp)
-  awk -v port="$PORT" '{gsub(/PORT=8092/, "PORT=" port); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-
-  ok ".env 已创建"
-fi
-
-# --- Environment (prompt BEFORE creating files) ---
-if [ ! -f .env ]; then
+  # Prompt password BEFORE creating .env
   echo ""
   warn "首次部署，请设置管理后台密码"
+  ADMIN_PW=""
   while true; do
     read -sp "请输入管理密码: " ADMIN_PW
     echo ""
@@ -193,9 +174,34 @@ if [ ! -f .env ]; then
     fi
     break
   done
-  ok "密码已设置"
+
+  # Create .env from template
+  cp .env.production.example .env
+
+  RANDOM_SECRET=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
+
+  TMP_ENV=$(mktemp)
+  awk -v secret="$RANDOM_SECRET" '{gsub(/change-me-to-a-random-secret/, secret); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v pw="$ADMIN_PW" '{gsub(/change-me-to-a-strong-password/, pw); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  # Replace full line to avoid concatenation bug
+  TMP_ENV=$(mktemp)
+  awk -v image="$IMAGE" '{gsub(/^#\s*IMAGE=.*/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v port="$PORT" '{gsub(/^PORT=.*/, "PORT=" port); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+
+  ok ".env 已生成"
 else
-  ok ".env 已存在"
+  ok ".env 已存在，跳过配置"
+  # Fix corrupted IMAGE value (e.g. duplicated image name from old bug)
+  if grep -q "^IMAGE=" .env 2>/dev/null; then
+    CURRENT_IMG=$(grep "^IMAGE=" .env | cut -d= -f2)
+    if [ "$CURRENT_IMG" != "$IMAGE" ]; then
+      TMP_ENV=$(mktemp)
+      awk -v image="$IMAGE" '{gsub(/^IMAGE=.*/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+      info "已修正 IMAGE: $CURRENT_IMG -> $IMAGE"
+    fi
+  fi
 fi
 
 # --- Version tracking ---
@@ -232,7 +238,6 @@ info "等待健康检查..."
 for i in $(seq 1 12); do
   sleep 5
   if curl -sf "http://localhost:$PORT/api/stats" > /dev/null 2>&1; then
-    # Get public IP
     PUBLIC_IP=$(curl -sf --connect-timeout 3 ifconfig.me 2>/dev/null || echo "<服务器IP>")
     echo ""
     echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"

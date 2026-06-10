@@ -6,7 +6,7 @@
 set -e
 
 # --- Config ---
-DEPLOY_DIR="${DEPLOY_DIR:-/opt/eva-covenant}"
+DEPLOY_DIR="${DEPLOY_DIR:-/home/eva-covenant}"
 IMAGE="${IMAGE:-xiaoyuyu123/eva-covenant:latest}"
 PORT="${PORT:-8092}"
 REPO_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master"

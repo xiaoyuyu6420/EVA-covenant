@@ -38,7 +38,7 @@ function getServerAttributionSnapshot() {
 export default function HomeClient() {
   const {
     screen, currentQ, progress, totalQ, qList, result, dimScores, userGrades,
-    startTest, handleAnswer, restart,
+    startTest, handleAnswer, restart, error, clearError,
   } = useQuiz();
   const trackedResultCode = useRef<string | null>(null);
   const trackedRelayCode = useRef<string | null>(null);
@@ -136,6 +136,21 @@ export default function HomeClient() {
       <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden pt-3 pb-4"
         style={{ scrollbarWidth: "none" }}
       >
+        {error && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div className="bg-[var(--card)] border border-red-500/50 rounded-lg p-6 max-w-sm text-center">
+              <div className="text-red-500 text-4xl mb-4">⚠️</div>
+              <h3 className="text-white font-bold mb-2">Error</h3>
+              <p className="text-gray-400 text-sm mb-4">{error}</p>
+              <button
+                onClick={clearError}
+                className="eva-btn border border-[var(--nerv-orange)] text-[var(--nerv-orange)] px-6 py-2 text-sm tracking-widest hover:bg-[var(--nerv-orange)] hover:text-white transition-all"
+              >
+                RETRY
+              </button>
+            </div>
+          </div>
+        )}
         {screen === "welcome" && (
           <WelcomeScreen
             onStart={handleStartTest}

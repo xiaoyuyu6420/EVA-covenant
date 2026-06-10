@@ -1,5 +1,5 @@
 import {
-  GRADE_VALUES, DIM_WEIGHTS, ALGO_PARAMS,
+  GRADE_VALUES, DIM_WEIGHTS, ALGO_PARAMS, DIM_INDEX,
   type Grade, type FullResult, type MatchResult,
 } from "./types";
 
@@ -61,6 +61,7 @@ export function parseVector(vec: string): Grade[] {
 
 /**
  * 计算加权曼哈顿距离和相似度
+ * 归一化：基于用户向量，计算与所有可能模板的最大距离
  */
 function computeSimilarity(userGrades: Grade[], templateVec: string): number {
   const templateGrades = parseVector(templateVec);
@@ -74,15 +75,16 @@ function computeSimilarity(userGrades: Grade[], templateVec: string): number {
     const uVal = GRADE_VALUES[userGrades[i]];
     const tVal = GRADE_VALUES[templateGrades[i]];
     dist += w * Math.abs(uVal - tVal);
-    maxDist += w * maxGrade;
+    // 对于固定的用户值，最大距离是与最远模板值的距离
+    maxDist += w * Math.max(uVal, maxGrade - uVal);
   }
 
-  // 归一化: 用户和模板的最低可能距离是各自减去最小值
-  // 但简化处理：直接用最大距离做归一化
-  const minPossibleDist = 0;
-  const adjustedMaxDist = maxDist - minPossibleDist;
-  const similarity = ((adjustedMaxDist - dist) / adjustedMaxDist) * 100;
+  // 避免除零（当所有维度都是中间值时 maxDist 可能为 0）
+  if (maxDist === 0) {
+    return dist === 0 ? 100 : 0;
+  }
 
+  const similarity = ((maxDist - dist) / maxDist) * 100;
   return Math.max(0, Math.min(100, similarity));
 }
 
@@ -101,13 +103,16 @@ export function matchPersonality(
 
   // ① 检查特殊触发 — 需要门控+触发+相对维度结构三重条件
   if (gateValue === "complement" && triggerValue === "CMPL") {
-    // CMPL 应该是稀有结果：高共情 + 高孤独牵引 + 低边界，而不是只要选择补完路线就触发。
-    const empathy = scores[6]; // C1
-    const loneliness = scores[7]; // C2
-    const atField = scores[2]; // A3
-    const hasHighEmpathy = GRADE_VALUES[userGrades[6]] >= GRADE_VALUES.H && empathy >= atField + 2;
-    const hasHighLonelinessPull = GRADE_VALUES[userGrades[7]] >= GRADE_VALUES.H && loneliness >= atField + 1;
-    const hasLowBoundary = userGrades[2] === "L";
+    // CMPL 应该是稀有结果：高共情 + 高孤独牵引 + 低边界
+    // 使用原始分数比较（更直观），不再混合分档判断
+    const empathy = scores[DIM_INDEX.C1];      // C1 共情力
+    const loneliness = scores[DIM_INDEX.C2];   // C2 孤独倾向
+    const atField = scores[DIM_INDEX.A3];      // A3 AT力场
+
+    // 三重条件：高共情 >= 5，高孤独 >= 4 且比边界高，低边界 <= 2
+    const hasHighEmpathy = empathy >= 5;
+    const hasHighLonelinessPull = loneliness >= 4 && loneliness >= atField;
+    const hasLowBoundary = atField <= 2;
 
     if (hasHighEmpathy && hasHighLonelinessPull && hasLowBoundary) {
       const cmpl = specialTypes.find((s) => s.code === "CMPL");
@@ -127,8 +132,8 @@ export function matchPersonality(
 
   // ①-2 检查十三号机特殊触发 — 需要高同步率+高存在追问
   if (gateValue === "transcend" && triggerValue === "U13G") {
-    const syncRate = scores[0]; // A1
-    const existential = scores[11]; // D3
+    const syncRate = scores[DIM_INDEX.A1];      // A1 同步率
+    const existential = scores[DIM_INDEX.D3];   // D3 存在追问
     if (syncRate >= 5 && existential >= 5) {
       const u13g = specialTypes.find((s) => s.code === "U13G");
       if (!u13g) return matchPersonality(scores, undefined, undefined, matchData);
@@ -146,6 +151,35 @@ export function matchPersonality(
   }
 
   // ② 向量匹配：计算所有模板的相似度
+  // 边界检查：personalityTypes 为空时返回 fallback
+  if (personalityTypes.length === 0) {
+    const adam = specialTypes.find((s) => s.code === "ADAM");
+    if (!adam) {
+      // 极端情况：连 ADAM 都没有，返回默认结果
+      const defaultResult: MatchResult = {
+        code: "UNKNOWN", name: "未知", slogan: "", desc: "",
+        similarity: 0, isSpecial: true, isBoundary: false,
+        emoji: "❓", vector: userGrades.join("").replace(/(.{3})/g, "$1-").slice(0, -1),
+      };
+      return {
+        top: defaultResult, top3: [defaultResult],
+        userVector: userGrades, userScores: scores,
+        groupPosition: { rank: 1, total: 1, percentage: "100%" },
+      };
+    }
+    const result: MatchResult = {
+      code: adam.code, name: adam.name, slogan: adam.slogan,
+      desc: adam.desc, similarity: 0, isSpecial: true,
+      isBoundary: false, emoji: adam.emoji,
+      vector: userGrades.join("").replace(/(.{3})/g, "$1-").slice(0, -1),
+    };
+    return {
+      top: result, top3: [result],
+      userVector: userGrades, userScores: scores,
+      groupPosition: { rank: 1, total: 1, percentage: "100%" },
+    };
+  }
+
   const ranked = personalityTypes
     .map((pt) => ({
       type: pt,
@@ -156,14 +190,15 @@ export function matchPersonality(
   const top3Types = ranked.slice(0, 3);
 
   const top1 = top3Types[0];
-  const top2 = top3Types[1];
+  const top2 = top3Types[1]; // 可能为 undefined
 
   // ③ 边界检查
   let isBoundary = false;
   let selectedType = top1;
   let usedFallback = false;
 
-  const gap = top1.similarity - top2.similarity;
+  // 只有 top2 存在时才进行边界检查
+  const gap = top2 ? top1.similarity - top2.similarity : delta + 1;
 
   if (gap < delta) {
     // Top1 和 Top2 差距太小

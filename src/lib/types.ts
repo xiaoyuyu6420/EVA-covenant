@@ -24,6 +24,15 @@ export const DIMENSIONS = [
 
 export type DimCode = (typeof DIMENSIONS)[number]["code"];
 
+// ===== 维度索引常量 (避免魔法数字) =====
+export const DIM_INDEX = {
+  A1: 0, A2: 1, A3: 2,
+  B1: 3, B2: 4, B3: 5,
+  C1: 6, C2: 7, C3: 8,
+  D1: 9, D2: 10, D3: 11,
+  E1: 12, E2: 13, E3: 14,
+} as const;
+
 // ===== 分档 =====
 export type Grade = "L" | "M" | "H" | "X";
 export const GRADE_VALUES: Record<Grade, number> = { L: 0, M: 1, H: 2, X: 3 };

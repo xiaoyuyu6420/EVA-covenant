@@ -198,10 +198,85 @@ ALGO_PARAMS = {
 - DB query: `prisma testRecord.findMany({ include: { answers: true } })`
 
 ### Deploy
-- GitHub Actions auto-deploy on push to main
+- GitHub Actions auto-deploy on push to master
 - Docker Compose on production server
 - Health check: `curl https://eva-covenant.com/api/stats`
 - Logs: `docker compose logs -f eva-covenant`
+
+### Deployment Architecture
+
+```
+本地开发 → GitHub → GitHub Actions → Docker Hub → 服务器(镜像加速)
+```
+
+1. 代码推送到 GitHub
+2. GitHub Actions 构建镜像并推送到 Docker Hub
+3. 服务器执行 `docker compose pull && up -d`（需配置阿里云镜像加速）
+
+### Deployment Scripts
+
+**一键部署** (首次):
+```bash
+curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/scripts/deploy.sh | bash
+```
+
+**部署脚本功能**:
+- `scripts/deploy.sh` — 一键部署，支持版本管理和回滚
+  - 自动配置国内 Docker 镜像加速
+  - 交互式设置管理员密码
+  - 版本记录和回滚：`./scripts/deploy.sh --rollback`
+- `scripts/restore-db.sh` — 交互式数据库恢复工具
+  - 列出所有备份供选择
+  - 恢复前自动备份当前数据库
+  - 自动重启并验证服务
+- `scripts/backup.sh` — 容器内自动备份脚本（每 6 小时运行）
+  - 使用 SQLite .backup 保证数据一致性
+  - gzip 压缩节省空间
+  - 保留最近 30 个备份
+
+**Docker 配置**:
+- 数据目录：`./data` (bind mount，便于备份)
+- 备份目录：`./backups` (bind mount)
+- 资源限制：512M 内存，1 CPU
+- 健康检查：每 30 秒检测 `/api/stats`
+
+### Server Setup (一次性)
+
+```bash
+mkdir -p /opt/eva-covenant && cd /opt/eva-covenant
+mkdir -p data backups
+
+# 下载配置文件
+curl -o docker-compose.yml https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/docker-compose.yml
+
+# 配置环境变量
+echo "ADMIN_PASSWORD=你的密码" > .env
+
+# 配置 Docker 镜像加速（阿里云）
+sudo tee /etc/docker/daemon.json << 'EOF'
+{
+  "registry-mirrors": ["https://你的加速地址.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl restart docker
+
+# 首次部署
+docker compose pull && docker compose up -d
+```
+
+### 日常更新
+
+```bash
+cd /opt/eva-covenant
+docker compose pull && docker compose up -d
+```
+
+### 数据库恢复
+
+```bash
+cd /opt/eva-covenant
+./scripts/restore-db.sh  # 交互式选择备份恢复
+```
 
 ### Repositories
 

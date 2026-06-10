@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const LANGS = ["en", "ja", "ko", "zh-TW"] as const;
 
+function parseTranslations(raw: string | null | undefined): Record<string, Record<string, string>> {
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 // ===== GET: Download current quiz data as Excel =====
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   const XLSX = await import("xlsx");
 
   // Fetch all data from database
@@ -144,13 +154,12 @@ export async function GET() {
   });
 }
 
-function parseTranslations(raw: string | null | undefined): Record<string, Record<string, string>> {
-  if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
-}
-
 // ===== POST: Upload and import =====
 export async function POST(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const XLSX = await import("xlsx");
     const formData = await req.formData();

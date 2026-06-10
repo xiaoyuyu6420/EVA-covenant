@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   const { code } = await params;
 
   const pt = await prisma.personalityType.findUnique({ where: { code } });
@@ -20,6 +25,10 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { code } = await params;
     const body = await req.json();

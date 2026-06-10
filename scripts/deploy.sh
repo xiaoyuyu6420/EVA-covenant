@@ -162,18 +162,44 @@ if [ ! -f .env ]; then
 
   # Generate random secret
   RANDOM_SECRET=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
-  sed -i.bak "s/change-me-to-a-random-secret/$RANDOM_SECRET/" .env && rm -f .env.bak
+
+  # Use temp file for secure substitution to avoid password in command history
+  TMP_ENV=$(mktemp)
+  cp .env "$TMP_ENV"
+
+  # Replace secret securely
+  awk -v secret="$RANDOM_SECRET" '{gsub(/change-me-to-a-random-secret/, secret); print}' "$TMP_ENV" > .env
+  rm -f "$TMP_ENV"
 
   echo ""
-  warn "请设置管理员密码（直接回车使用默认值 admin123）"
-  read -p "ADMIN_PASSWORD: " -r ADMIN_PW
-  if [ -n "$ADMIN_PW" ]; then
-    sed -i.bak "s/change-me-to-a-strong-password/$ADMIN_PW/" .env && rm -f .env.bak
-  fi
+  warn "请设置管理员密码（必须设置，不能为空）"
+  while true; do
+    read -sp "ADMIN_PASSWORD: " -r ADMIN_PW
+    echo ""
+    if [ -z "$ADMIN_PW" ]; then
+      warn "密码不能为空，请重新输入"
+      continue
+    fi
+    # Confirm password
+    read -sp "确认密码: " -r ADMIN_PW_CONFIRM
+    echo ""
+    if [ "$ADMIN_PW" != "$ADMIN_PW_CONFIRM" ]; then
+      warn "密码不匹配，请重新输入"
+      continue
+    fi
+    break
+  done
 
-  # Set image
-  sed -i.bak "s|# IMAGE=|IMAGE=$IMAGE|" .env && rm -f .env.bak
-  sed -i.bak "s|PORT=8092|PORT=$PORT|" .env && rm -f .env.bak
+  # Securely replace password using temp file
+  TMP_ENV=$(mktemp)
+  awk -v pw="$ADMIN_PW" '{gsub(/change-me-to-a-strong-password/, pw); print}' .env > "$TMP_ENV"
+  mv "$TMP_ENV" .env
+
+  # Set image and port using temp file
+  TMP_ENV=$(mktemp)
+  awk -v image="$IMAGE" '{gsub(/# IMAGE=/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v port="$PORT" '{gsub(/PORT=8092/, "PORT=" port); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
 
   ok ".env 已生成"
 else

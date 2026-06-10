@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 function parseMeta(raw: string | null) {
   if (!raw) return {};
@@ -217,7 +218,11 @@ function toShareLinkConversionRows(map: Map<string, ShareLinkConversionStat>) {
     );
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   // 来源渠道统计
   const utmStats = await prisma.testRecord.groupBy({
     by: ["utmSource"],

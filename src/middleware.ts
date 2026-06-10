@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
-
-const SECRET = process.env.ADMIN_SECRET || "eva-covenant-secret";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -12,6 +8,18 @@ export function middleware(req: NextRequest) {
 
   // Allow login routes through
   if (pathname === "/api/admin/login" || pathname === "/admin/login") return NextResponse.next();
+
+  // 检查环境变量是否配置
+  if (!process.env.ADMIN_SECRET || !process.env.ADMIN_PASSWORD) {
+    // 环境变量未配置时，拒绝所有管理请求
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Server configuration error. Admin credentials not configured." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.redirect(new URL("/admin/login?error=config", req.url));
+  }
 
   const token = req.cookies.get("admin_token")?.value;
   if (!token) {

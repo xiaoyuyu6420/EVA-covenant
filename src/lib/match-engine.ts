@@ -153,19 +153,12 @@ export function matchPersonality(
   // ② 向量匹配：计算所有模板的相似度
   // 边界检查：personalityTypes 为空时返回 fallback
   if (personalityTypes.length === 0) {
+    // 查找 ADAM 作为 fallback
     const adam = specialTypes.find((s) => s.code === "ADAM");
     if (!adam) {
-      // 极端情况：连 ADAM 都没有，返回默认结果
-      const defaultResult: MatchResult = {
-        code: "UNKNOWN", name: "未知", slogan: "", desc: "",
-        similarity: 0, isSpecial: true, isBoundary: false,
-        emoji: "❓", vector: userGrades.join("").replace(/(.{3})/g, "$1-").slice(0, -1),
-      };
-      return {
-        top: defaultResult, top3: [defaultResult],
-        userVector: userGrades, userScores: scores,
-        groupPosition: { rank: 1, total: 1, percentage: "100%" },
-      };
+      // 极端情况：数据库中没有 ADAM，抛出异常而不是返回 UNKNOWN
+      // 这应该在部署时通过 seed 数据避免
+      throw new Error("No personality types or ADAM fallback available. Database may not be seeded correctly.");
     }
     const result: MatchResult = {
       code: adam.code, name: adam.name, slogan: adam.slogan,

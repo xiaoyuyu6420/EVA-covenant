@@ -1,11 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [configError, setConfigError] = useState(false);
+
+  // 检查管理员凭证是否已配置
+  useEffect(() => {
+    fetch("/api/admin/login")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.configured) {
+          setConfigError(true);
+          setError("服务器配置错误：缺少必要的环境变量");
+        }
+      })
+      .catch(() => {
+        // 忽略错误，继续显示登录表单
+      });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,10 +33,11 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
+      const data = await res.json();
       if (res.ok) {
         window.location.href = "/admin";
       } else {
-        setError("密码错误");
+        setError(data.error || "密码错误");
       }
     } catch {
       setError("网络错误");
@@ -63,12 +80,18 @@ export default function AdminLoginPage() {
 
         <button
           type="submit"
-          disabled={loading || !password}
+          disabled={loading || !password || configError}
           className="w-full py-3 text-sm font-bold tracking-[2px] border border-[#e65100] text-[#e65100] bg-transparent cursor-pointer uppercase hover:bg-[#e65100] hover:text-black transition-colors disabled:opacity-40"
           style={{ fontFamily: "var(--font-tech)" }}
         >
           {loading ? "验证中..." : "登录"}
         </button>
+
+        {configError && (
+          <p className="text-yellow-500 text-xs mt-4" style={{ fontFamily: "var(--font-tech)" }}>
+            ⚠ 请在服务器上配置 ADMIN_PASSWORD 和 ADMIN_SECRET 环境变量
+          </p>
+        )}
       </form>
     </div>
   );

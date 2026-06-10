@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   const questions = await prisma.question.findMany({
     include: { options: { orderBy: { order: "asc" } } },
     orderBy: { order: "asc" },
@@ -10,6 +15,10 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { id, text, dimCode, options, translations } = body;
@@ -54,6 +63,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { dimCode, text, order, isGate, isTrigger, options } = body;
@@ -89,6 +102,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  // 验证管理员身份
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = parseInt(searchParams.get("id") ?? "");

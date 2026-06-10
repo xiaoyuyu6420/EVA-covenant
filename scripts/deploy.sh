@@ -156,32 +156,36 @@ download_file "docker-compose.yml" "docker-compose.yml"
 download_file ".env.production.example" ".env.production.example"
 ok "配置文件已下载"
 
-# --- Environment ---
+# --- Create .env with password ---
 if [ ! -f .env ]; then
   cp .env.production.example .env
 
-  # Generate random secret
   RANDOM_SECRET=$(openssl rand -hex 16 2>/dev/null || head -c 32 /dev/urandom | xxd -p)
 
-  # Use temp file for secure substitution to avoid password in command history
   TMP_ENV=$(mktemp)
-  cp .env "$TMP_ENV"
+  awk -v secret="$RANDOM_SECRET" '{gsub(/change-me-to-a-random-secret/, secret); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v pw="$ADMIN_PW" '{gsub(/change-me-to-a-strong-password/, pw); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v image="$IMAGE" '{gsub(/# IMAGE=/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
+  TMP_ENV=$(mktemp)
+  awk -v port="$PORT" '{gsub(/PORT=8092/, "PORT=" port); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
 
-  # Replace secret securely
-  awk -v secret="$RANDOM_SECRET" '{gsub(/change-me-to-a-random-secret/, secret); print}' "$TMP_ENV" > .env
-  rm -f "$TMP_ENV"
+  ok ".env 已创建"
+fi
 
+# --- Environment (prompt BEFORE creating files) ---
+if [ ! -f .env ]; then
   echo ""
-  warn "请设置管理员密码（必须设置，不能为空）"
+  warn "首次部署，请设置管理后台密码"
   while true; do
-    read -sp "ADMIN_PASSWORD: " -r ADMIN_PW
+    read -sp "请输入管理密码: " ADMIN_PW
     echo ""
     if [ -z "$ADMIN_PW" ]; then
-      warn "密码不能为空，请重新输入"
+      warn "密码不能为空"
       continue
     fi
-    # Confirm password
-    read -sp "确认密码: " -r ADMIN_PW_CONFIRM
+    read -sp "确认密码: " ADMIN_PW_CONFIRM
     echo ""
     if [ "$ADMIN_PW" != "$ADMIN_PW_CONFIRM" ]; then
       warn "密码不匹配，请重新输入"
@@ -189,21 +193,9 @@ if [ ! -f .env ]; then
     fi
     break
   done
-
-  # Securely replace password using temp file
-  TMP_ENV=$(mktemp)
-  awk -v pw="$ADMIN_PW" '{gsub(/change-me-to-a-strong-password/, pw); print}' .env > "$TMP_ENV"
-  mv "$TMP_ENV" .env
-
-  # Set image and port using temp file
-  TMP_ENV=$(mktemp)
-  awk -v image="$IMAGE" '{gsub(/# IMAGE=/, "IMAGE=" image); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-  TMP_ENV=$(mktemp)
-  awk -v port="$PORT" '{gsub(/PORT=8092/, "PORT=" port); print}' .env > "$TMP_ENV" && mv "$TMP_ENV" .env
-
-  ok ".env 已生成"
+  ok "密码已设置"
 else
-  ok ".env 已存在，跳过配置"
+  ok ".env 已存在"
 fi
 
 # --- Version tracking ---

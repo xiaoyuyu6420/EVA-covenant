@@ -20,7 +20,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3002
 ENV HOSTNAME="0.0.0.0"
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl sqlite dcron
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -32,6 +32,8 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
 COPY --from=builder /app/node_modules/esbuild ./node_modules/esbuild
 COPY --from=builder /app/node_modules/@esbuild ./node_modules/@esbuild
+COPY --from=builder /app/scripts/backup.sh /app/scripts/backup.sh
+RUN chmod +x /app/scripts/backup.sh
 
 # Entrypoint script: run DB migration + seed on startup
 RUN cat > /app/entrypoint.sh << 'EOF'
@@ -52,6 +54,11 @@ if [ "$COUNT" = "0" ]; then
 else
   echo "Database already seeded, skipping."
 fi
+
+# Run initial backup and schedule via cron (every 6 hours)
+/app/scripts/backup.sh
+echo "0 */6 * * * /app/scripts/backup.sh" | crontab -
+crond
 
 echo "Starting server..."
 exec node server.js

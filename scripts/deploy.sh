@@ -1,6 +1,7 @@
 #!/bin/bash
 # EVA Covenant 一键部署脚本
 # Usage: curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master/scripts/deploy.sh | bash
+# 回滚: cd $DEPLOY_DIR && ./scripts/deploy.sh --rollback
 
 set -e
 
@@ -9,6 +10,11 @@ DEPLOY_DIR="${DEPLOY_DIR:-/opt/eva-covenant}"
 IMAGE="${IMAGE:-xiaoyuyu123/eva-covenant:latest}"
 PORT="${PORT:-8092}"
 REPO_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master"
+# GitHub 镜像加速（国内）
+GITHUB_PROXY="${GITHUB_PROXY:-https://ghfast.top/https://raw.githubusercontent.com/xiaoyuyu6420/EVA-covenant/master}"
+
+# --- Version Management ---
+VERSION_FILE="$DEPLOY_DIR/.current-version"
 
 # --- Colors ---
 RED='\033[0;31m'
@@ -22,11 +28,80 @@ ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC}  $*"; exit 1; }
 
+# --- Download with mirror fallback ---
+# 先尝试直连，失败后使用镜像加速
+download_file() {
+  local path="$1"
+  local output="$2"
+  if curl -sSf --connect-timeout 10 -o "$output" "${REPO_RAW}/${path}" 2>/dev/null; then
+    return 0
+  fi
+  warn "直连失败，尝试镜像加速..."
+  curl -sSf --connect-timeout 10 -o "$output" "${GITHUB_PROXY}/${path}"
+}
+
+# --- Rollback ---
+rollback() {
+  echo ""
+  echo -e "${CYAN}╔══════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}║     EVA Covenant - 版本回滚          ║${NC}"
+  echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
+  echo ""
+
+  if [ ! -f "$VERSION_FILE" ]; then
+    fail "没有版本记录文件 ($VERSION_FILE)，无法回滚"
+  fi
+
+  current=$(cat "$VERSION_FILE")
+  previous=$(grep -v "^${current}$" "${VERSION_FILE}.history" 2>/dev/null | tail -1)
+
+  if [ -z "$previous" ]; then
+    fail "没有找到上一个版本，请检查 ${VERSION_FILE}.history"
+  fi
+
+  info "当前版本: $current"
+  info "回滚版本: $previous"
+  read -p "确定回滚吗？[y/N] " -r confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    info "已取消回滚"
+    exit 0
+  fi
+
+  cd "$DEPLOY_DIR"
+
+  # 替换 docker-compose.yml 中的镜像标签
+  # 兼容 macOS (sed -i '') 和 Linux (sed -i)
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|image: .*xiaoyuyu123/eva-covenant:.*|image: xiaoyuyu123/eva-covenant:${previous}|" docker-compose.yml
+  else
+    sed -i "s|image: .*xiaoyuyu123/eva-covenant:.*|image: xiaoyuyu123/eva-covenant:${previous}|" docker-compose.yml
+  fi
+
+  info "拉取镜像: xiaoyuyu123/eva-covenant:${previous}"
+  docker compose pull
+  docker compose up -d
+
+  echo "$previous" > "$VERSION_FILE"
+
+  echo ""
+  echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"
+  echo -e "${GREEN}║     回滚完成！版本: ${previous}$(printf '%*s' $((20 - ${#previous})) '')║${NC}"
+  echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
+  exit 0
+}
+
+# --- Check rollback flag ---
+if [ "$1" = "--rollback" ] || [ "$1" = "-r" ]; then
+  rollback
+fi
+
 # --- Preflight ---
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║     EVA Covenant - 一键部署          ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo -e "  ${YELLOW}提示: 使用 --rollback 可回滚到上一个版本${NC}"
 echo ""
 
 command -v docker >/dev/null 2>&1 || fail "Docker 未安装，请先安装 Docker"
@@ -67,13 +142,18 @@ fi
 
 # --- Deploy directory ---
 info "部署目录: $DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
+mkdir -p "$DEPLOY_DIR"/{data,backups}
 cd "$DEPLOY_DIR"
 
-# --- Download compose & env ---
+# --- Backup & Download compose & env ---
 info "下载配置文件..."
-curl -sSL "$REPO_RAW/docker-compose.yml" -o docker-compose.yml
-curl -sSL "$REPO_RAW/.env.production.example" -o .env.production.example
+if [ -f docker-compose.yml ]; then
+  backup_name="docker-compose.yml.backup.$(date +%Y%m%d%H%M%S)"
+  cp docker-compose.yml "$backup_name"
+  info "已备份: $backup_name"
+fi
+download_file "docker-compose.yml" "docker-compose.yml"
+download_file ".env.production.example" ".env.production.example"
 ok "配置文件已下载"
 
 # --- Environment ---
@@ -99,6 +179,15 @@ if [ ! -f .env ]; then
 else
   ok ".env 已存在，跳过配置"
 fi
+
+# --- Version tracking ---
+CURRENT_VERSION="latest"
+if [ -f "$VERSION_FILE" ]; then
+  PREVIOUS_VERSION=$(cat "$VERSION_FILE")
+  echo "$PREVIOUS_VERSION" >> "${VERSION_FILE}.history"
+  info "记录版本历史: $PREVIOUS_VERSION"
+fi
+echo "$CURRENT_VERSION" > "$VERSION_FILE"
 
 # --- Login Docker Hub ---
 info "拉取镜像: $IMAGE"
@@ -135,14 +224,17 @@ for i in $(seq 1 12); do
     echo -e "  ${CYAN}应用地址${NC}    http://${PUBLIC_IP}:${PORT}"
     echo -e "  ${CYAN}管理后台${NC}    http://${PUBLIC_IP}:${PORT}/admin"
     echo -e "  ${CYAN}配置文件${NC}    ${DEPLOY_DIR}/.env"
-    echo -e "  ${CYAN}数据目录${NC}    Docker Volume: eva-covenant-db"
-    echo -e "  ${CYAN}自动备份${NC}    每日备份，保留 30 天"
+    echo -e "  ${CYAN}数据目录${NC}    ${DEPLOY_DIR}/data"
+    echo -e "  ${CYAN}备份目录${NC}    ${DEPLOY_DIR}/backups"
+    echo -e "  ${CYAN}当前版本${NC}    ${CURRENT_VERSION}"
+    echo -e "  ${CYAN}自动备份${NC}    每 6 小时备份，保留 30 份"
     echo ""
     echo -e "  ${YELLOW}常用命令${NC}"
     echo "  查看日志:    docker compose logs -f"
     echo "  重启服务:    docker compose restart"
     echo "  停止服务:    docker compose down"
     echo "  更新部署:    docker pull $IMAGE && docker compose up -d"
+    echo "  回滚版本:    $0 --rollback"
     echo ""
     exit 0
   fi

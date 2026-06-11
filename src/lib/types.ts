@@ -2,20 +2,20 @@
 export const DIMENSIONS = [
   // 模型 A - 适格性 (Pilot Compatibility)
   { code: "A1", model: "A", name: "同步率", desc: "与EVA建立精神链接的能力" },
-  { code: "A2", model: "A", name: "精神韧性", desc: "面对精神冲击的承受力" },
+  { code: "A2", model: "A", name: "抗压能力", desc: "面对精神冲击的承受力" },
   { code: "A3", model: "A", name: "AT力场", desc: "自我边界与防御强度" },
   // 模型 B - 战斗风格 (Combat Style)
   { code: "B1", model: "B", name: "攻击性", desc: "主动出击 vs 防守反击" },
   { code: "B2", model: "B", name: "战术性", desc: "依赖计划 vs 直觉反应" },
   { code: "B3", model: "B", name: "决断力", desc: "紧急时刻的果断程度" },
   // 模型 C - 情感模式 (Emotional Pattern)
-  { code: "C1", model: "C", name: "共情力", desc: "对他人情感的感知能力" },
-  { code: "C2", model: "C", name: "孤独倾向", desc: "倾向独处 vs 寻求连接" },
-  { code: "C3", model: "C", name: "表达方式", desc: "内敛压抑 vs 外放直接" },
+  { code: "C1", model: "C", name: "共感", desc: "对他人情感的感知能力" },
+  { code: "C2", model: "C", name: "独处倾向", desc: "倾向独处 vs 寻求连接" },
+  { code: "C3", model: "C", name: "表达欲", desc: "内敛压抑 vs 外放直接" },
   // 模型 D - 价值取向 (Value System)
   { code: "D1", model: "D", name: "责任感", desc: "对使命任务的承担意愿" },
-  { code: "D2", model: "D", name: "自我意识", desc: "自我需求 vs 他人优先" },
-  { code: "D3", model: "D", name: "存在追问", desc: "对生命意义的探索深度" },
+  { code: "D2", model: "D", name: "自我关注", desc: "自我需求 vs 他人优先" },
+  { code: "D3", model: "D", name: "意义感", desc: "对生命意义的探索深度" },
   // 模型 E - 互动模式 (Interaction)
   { code: "E1", model: "E", name: "独立性", desc: "依赖他人 vs 独自行动" },
   { code: "E2", model: "E", name: "信任度", desc: "对他人组织的信任程度" },

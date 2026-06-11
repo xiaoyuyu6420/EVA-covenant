@@ -361,6 +361,14 @@ body::after {
   text-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Grid line overlay */
 .grid-overlay {
   background-image:

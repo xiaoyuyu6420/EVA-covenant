@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
-import { Copy, RotateCcw, Share2 } from "lucide-react";
+import { Copy, Maximize2, Minimize2, RotateCcw, Share2 } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { buildShareUrl, createShareId, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
@@ -92,21 +92,21 @@ const GRADE_LABELS: Record<Grade, string> = { L: "低", M: "中", H: "高", X: "
 const GRADE_WIDTH: Record<Grade, number> = { L: 28, M: 52, H: 76, X: 100 };
 const DIMENSION_NAMES: Map<string, string> = new Map(DIMENSIONS.map((dimension) => [dimension.code, dimension.name]));
 const DIMENSION_CHAIN_PROMPTS = [
-  "同步感很强的人，测完通常会有完全不同的机体解释。",
-  "压力越大越冷静的人，结果很容易和你形成反差。",
-  "边界感很明显的人，适合拿来对照 AT 力场。",
-  "遇事先推进的人，能看出你们谁更像前锋。",
-  "先看方案和数据的人，适合对照作战风格。",
-  "关键时刻会拍板的人，结果通常很有辨识度。",
-  "能听出别人没说出口的人，适合对照共鸣侧。",
-  "一个人也能待很久的人，孤独倾向会拉开差距。",
-  "情绪表达很直接的人，能测出完全不同的外显方式。",
-  "习惯把责任扛起来的人，适合看谁会先上机。",
-  "很在意自我边界的人，适合对照适格样本感。",
-  "总会追问意义的人，容易测到高存在追问。",
-  "习惯自己解决问题的人，适合看独立性差异。",
-  "不轻易相信系统的人，适合对照 NERV 信任度。",
-  "场面一乱就会接管的人，适合看谁更像指挥位。",
+  "找一个跟你默契感很强的人测一次，看看结果是不是完全不一样。",
+  "找一个平时比你更急的人，结果可能很有反差。",
+  "找一个边界感很明确的人，对照一下你们的 AT 力场。",
+  "找一个遇事会直接冲的人，看看谁更像前锋。",
+  "找一个习惯先看方案再动手的人，对照一下你们的作战风格。",
+  "找一个关键时刻会拍板的人，看谁的结果更有辨识度。",
+  "找一个很能读懂别人情绪的人，对照一下你们的共感维度。",
+  "找一个一个人也待得住的人，独处倾向可能会拉开差距。",
+  "找一个有什么说什么的人，表达欲的差异会很直观。",
+  "找一个习惯把事扛下来的人，对照一下谁会先上机。",
+  "找一个很在意自己边界的人，对照一下边界感。",
+  "找一个总会追问意义的人，意义感可能会撞到一起。",
+  "找一个习惯自己解决问题的人，对比一下独立性。",
+  "找一个不太相信系统的人，对照一下信任度。",
+  "找一个场面一乱就会接管的人，看谁更像指挥位。",
 ];
 
 function cleanInviteName(value: string) {
@@ -231,9 +231,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン初号機",
     marker: "01",
     route: "测试机 / 高同步适格",
-    lore: "初号机在原作中不是稳定的武器平台。它经常和同步率异常、核心中的亲子关系、以及关键战斗中的失控行动绑定在一起。",
-    reading: "你的结果落在初号机，是因为同步倾向和存在追问同时偏高。这个组合更像是在压力中被迫建立连接，而不是单纯追求胜利。",
-    tension: "优势是临界点很高；问题是任务、关系和自我证明容易被绑在一起。",
+    lore: "初号机不是一台稳定的武器。它的故事总是和异常同步率、核心里的亲子关系、关键战斗中的失控绑在一起。",
+    reading: "你的同步率和意义感同时偏高，结果落在了初号机。与其说你在追求胜利，不如说你是被压力逼着建立连接的那种人。",
+    tension: "你的临界点很高，能扛住压力。但任务、关系和自我证明容易搅在一起，分不清哪个是哪个。",
     shareLine: "测试把我分到初号机：能启动，但不一定好控制。",
     theme: THEMES.unit01,
   },
@@ -243,9 +243,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン初号機 暴走",
     marker: "01",
     route: "暴走记录 / 临界同步",
-    lore: "初号机的暴走不是普通故障。原作把它处理成机体意志、驾驶员崩溃和核心反应同时出现的事件。",
-    reading: "你的高同步、高抗压和高攻击反应把结果推到暴走记录。这里的重点不是情绪大，而是外部压力超过阈值后，系统会直接接管行动。",
-    tension: "最强处在于危机中会自己动起来；最危险处也在这里，事后未必能解释每一步。",
+    lore: "初号机暴走不是普通的故障。原作里它是机体意志、驾驶员崩溃和核心反应同时爆发的事件。",
+    reading: "你的同步率、抗压能力和攻击反应都很高，被推到了暴走记录。重点不是你脾气大，而是压力超过阈值之后，你会直接接管行动。",
+    tension: "你最强的地方是危机里会自己动起来。最危险的地方也在这里——事后你未必解释得清每一步。",
     shareLine: "测试把我分到初号机暴走：不是稳定输出，是临界反应。",
     theme: THEMES.unit01,
   },
@@ -255,9 +255,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン弐号機",
     marker: "02",
     route: "正式量产机 / 实战适格",
-    lore: "贰号机是第一台正式实战用 EVA。红色机体、武器适应性和驾驶员的强自尊，是它在原作里的主要记忆点。",
-    reading: "你的攻击性、决断力和自我意识都偏前列。结果不是在说脾气，而是行动优先级非常清楚：先进入战场，再修正细节。",
-    tension: "优势是不用等别人推你；代价是失败会很难被当成普通失误。",
+    lore: "贰号机是第一台正式投入实战的 EVA。红色机体、武器适应性、驾驶员的强自尊，是它最鲜明的记忆。",
+    reading: "你的攻击性、决断力和自我关注都偏前列。这不是说你脾气差，而是你的行动优先级很清楚——先上场，再修细节。",
+    tension: "你不用等别人推你，这是你的优势。代价是失败的时候，你很难把它当成普通失误。",
     shareLine: "测试把我分到贰号机：能打，且很难假装不在意。",
     theme: THEMES.unit02,
   },
@@ -267,9 +267,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン弐号機 近接戦闘",
     marker: "02",
     route: "近战配置 / 高压推进",
-    lore: "贰号机在系列中承担了大量正面战斗。它的美感不在神秘，而在明确、锋利、带着自尊的进攻姿态。",
-    reading: "测试显示你的战斗判断比情绪表达更快。你适合短时间高压推进，但不适合长时间解释自己为什么这么做。",
-    tension: "优势是出手干净；风险是把休息也理解成退让。",
+    lore: "贰号机在系列里打了最多的正面战斗。它的美感不在神秘，而在清晰、锋利、带着自尊的进攻姿态。",
+    reading: "你的战斗判断比情绪表达更快。你适合短时间高压推进，但不适合长时间解释自己为什么这么做。",
+    tension: "你出手干净，这是优势。风险在于你会把休息也理解成退让。",
     shareLine: "测试把我分到贰号机近战配置：先处理问题，再处理感受。",
     theme: THEMES.unit02,
   },
@@ -279,9 +279,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン零号機",
     marker: "00",
     route: "原型机 / 低表征适格",
-    lore: "零号机是最早投入测试的原型机。它的存在感偏冷，和试验、替换、沉默的执行感联系更紧。",
-    reading: "你的结果更接近零号机，是因为责任感和独立性高，但表达与自我需求偏低。系统能读到执行力，却读不到太多外放信号。",
-    tension: "优势是稳定承担；风险是长期把自己当成可替换部件。",
+    lore: "零号机是最早投入测试的原型机。它的存在感偏冷，和试验、替换、沉默的执行感绑在一起。",
+    reading: "你的责任感和独立性高，但表达欲和自我需求偏低。系统能读到你的执行力，却读不到太多外放信号。",
+    tension: "你能稳定地扛住事情。但要小心长期把自己当成可替换的零件。",
     shareLine: "测试把我分到零号机：安静，不代表没有反应。",
     theme: THEMES.unit00,
   },
@@ -291,9 +291,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン零号機 改",
     marker: "00",
     route: "改装原型机 / 防御记录",
-    lore: "零号机改在视觉上更接近正式机体，但它仍保留原型机的冷感。原作中它常被放在保护、测试和牺牲的位置上。",
-    reading: "你的 AT 力场和责任感都很高，但同步与共情的外显并不强。你更像先完成保护，再决定要不要说明原因。",
-    tension: "优势是边界清楚；风险是别人只看见你的克制，看不见背后的投入。",
+    lore: "零号机改看起来更像正式机体了，但它保留了原型机的冷感。原作里它经常被放在保护、测试和牺牲的位置上。",
+    reading: "你的边界感和责任感都很高，但同步率和共感的外放不强。你更像先完成保护，再决定要不要解释原因。",
+    tension: "你的边界很清晰。风险是别人只看得见你的克制，看不见克制背后的投入。",
     shareLine: "测试把我分到零号机改：边界很硬，选择很少说出口。",
     theme: THEMES.unit00,
   },
@@ -303,9 +303,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン参号機",
     marker: "03",
     route: "正式机 / 普通人的战场",
-    lore: "参号机原本是正式量产路线上的机体，却在原作里被使徒侵蚀，成为一段很具体的悲剧。",
-    reading: "你的高责任感和较均衡的基础数据更接近参号机。它不像初号机那样神秘，也不像贰号机那样张扬，但它承担的是具体的人和具体的后果。",
-    tension: "优势是能把责任落到现实里；风险是太容易把别人的安全放在自己前面。",
+    lore: "参号机本来是正式量产线上的机体，但在原作里被使徒侵蚀，成了一个很具体的悲剧。",
+    reading: "你的责任感高，基础数据比较均衡，接近参号机。它不像初号机那样神秘，也不像贰号机那样张扬，但它扛的是具体的人和具体的后果。",
+    tension: "你能把责任落到现实里。但太容易把别人的安全放在自己前面。",
     shareLine: "测试把我分到参号机：普通配置，承担的事不普通。",
     theme: THEMES.unit03,
   },
@@ -315,9 +315,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン参号機 侵食記録",
     marker: "03",
     route: "侵蚀记录 / 高责任阈值",
-    lore: "参号机最重要的剧情不是性能，而是被侵蚀后的不可逆处境。机体成为敌人时，驾驶员仍被困在系统内部。",
-    reading: "你的责任感过高，同时保留较强同步和独立性。这个结果指向一种问题：即使局面已经不公平，你仍倾向于留在里面解决。",
-    tension: "优势是不会轻易退出；风险是太晚承认自己也需要撤离。",
+    lore: "参号机最重要的剧情不是性能，而是被侵蚀之后的不可逆处境。机体变成敌人时，驾驶员还困在系统里面。",
+    reading: "你的责任感过高，同时同步率和独立性也不低。这意味着局面已经不公平时，你仍然倾向于留在里面解决。",
+    tension: "你不会轻易退出。风险是你太晚才承认自己也需要撤离。",
     shareLine: "测试把我分到参号机侵蚀记录：不是不怕，是没退出。",
     theme: THEMES.unit03,
   },
@@ -327,9 +327,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン四号機",
     marker: "04",
     route: "试验机 / S2 机关记录",
-    lore: "四号机在原作中几乎没有实战记录。它和 S2 机关试验、第二支部消失这类资料性事件联系在一起。",
-    reading: "你的数据偏向理论稳定和低可见度。匹配四号机不是因为空白，而是因为很多关键反应不会在日常场景里被看见。",
-    tension: "优势是能在复杂系统里保持冷静；风险是存在感被误判成缺席。",
+    lore: "四号机在原作里几乎没有实战记录。它和 S2 机关试验、第二支部消失这些资料性事件连在一起。",
+    reading: "你的数据偏向理论稳定和低可见度。匹配四号机不是因为空白，而是因为你的很多关键反应不会在日常场景里被看到。",
+    tension: "你能在复杂系统里保持冷静。但你的存在感容易被误判成缺席。",
     shareLine: "测试把我分到四号机：记录很少，但不是没有发生。",
     theme: THEMES.unit04,
   },
@@ -339,9 +339,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン四号機 S2実験",
     marker: "04",
     route: "S2 试验 / 高理性低表征",
-    lore: "四号机的 S2 机关试验是 EVA 世界观里少见的技术性灾难。它的危险来自看似精确的系统边界被突破。",
-    reading: "你的战术性高，情绪表达低。系统把你归到四号机 S2 试验，是因为你习惯先计算后感受，甚至会把感受从记录中删掉。",
-    tension: "优势是精确；风险是精确到最后只剩结论，没有人知道过程。",
+    lore: "四号机的 S2 机关试验是 EVA 世界观里少见的技术性灾难。危险来自看似精确的系统边界被突破。",
+    reading: "你的计划性高，表达欲低。系统把你归到 S2 试验，是因为你习惯先算后感受，甚至会把感受从记录里删掉。",
+    tension: "你很精确。但精确到最后只剩结论，没人知道过程。",
     shareLine: "测试把我分到四号机 S2 试验：看起来冷静，其实只是记录方式不同。",
     theme: THEMES.unit04,
   },
@@ -351,9 +351,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン五号機",
     marker: "05",
     route: "临时机 / 局地作战",
-    lore: "五号机是临时、局地、非完整感很强的机体。它的重点不是标准化，而是在有限条件下完成任务。",
-    reading: "你的攻击性和决断力高，战术性不一定走常规路径。五号机适合这种反应：装备不完美，但会先把入口守住。",
-    tension: "优势是临场强；风险是长期把粗糙当成唯一可用的方式。",
+    lore: "五号机是临时、局地、不完整感很强的机体。它的重点不是标准化，而是在有限条件下把任务完成。",
+    reading: "你的攻击性和决断力高，战术上不一定会走常规路线。五号机适合你这种反应——装备不完美，但会先把入口守住。",
+    tension: "你的临场反应很强。风险是长期把粗糙当成唯一可用的方式。",
     shareLine: "测试把我分到五号机：配置不满，照样开打。",
     theme: THEMES.unit05,
   },
@@ -364,8 +364,8 @@ const PROFILES: Record<string, ResultProfile> = {
     marker: "05",
     route: "临时配置 / 阵地防御",
     lore: "五号机的临时感让它更像一台被推上前线的工程系统。它的意义在于够用，而不是完美。",
-    reading: "你的同步率和独立性偏高，攻击性中等。结果指向防守型临时配置：不主动夸张，但阵地交给你时会守住。",
-    tension: "优势是可靠；风险是太习惯在资源不足的情况下硬撑。",
+    reading: "你的同步率和独立性偏高，攻击性中等。结果指向防守型临时配置——你不主动夸张，但阵地交给你时会守住。",
+    tension: "你很可靠。但要小心太习惯在资源不足的情况下硬撑。",
     shareLine: "测试把我分到五号机临时配置：没有满配，但会守线。",
     theme: THEMES.unit05,
   },
@@ -375,9 +375,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン Mark.06",
     marker: "06",
     route: "月面机体 / 非 NERV 标准线",
-    lore: "Mark.06 与月面、SEELE 和更接近使徒侧的暗示相连。它在原作里的气质更冷、更远，也更像被提前安排好的节点。",
-    reading: "你的共情力和精神韧性高，但攻击欲不突出。这个组合让结果落在 Mark.06：能理解局面，却不急着证明自己在场。",
-    tension: "优势是距离感带来判断力；风险是太容易把真实意图藏成礼貌。",
+    lore: "Mark.06 来自月面，和 SEELE 有关系，带着接近使徒的暧昧气质。它在原作里更冷、更远，像是被提前安排好的一枚棋子。",
+    reading: "你的共感和抗压能力高，但攻击性不突出。这个组合指向 Mark.06——你能理解局面，但不急着证明自己在场。",
+    tension: "距离感让你看得清楚，但也容易把真心藏成礼貌。",
     shareLine: "测试把我分到 Mark.06：离得远，但看得很清楚。",
     theme: THEMES.mark06,
   },
@@ -387,9 +387,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン Mark.06 使徒側記録",
     marker: "06",
     route: "使徒侧记录 / 高共感",
-    lore: "Mark.06 在设定上一直带着接近使徒的暧昧感。它不是普通量产线的延伸，而是一台带有更高层安排的机体。",
-    reading: "高同步和高共情让你的结果偏向 Mark.06 的使徒侧记录。你对情绪和气氛的捕捉很快，但行动不一定外放。",
-    tension: "优势是能读懂未说出口的东西；风险是把理解误认为已经解决。",
+    lore: "Mark.06 在设定上一直带着接近使徒的暧昧感。它不是普通量产线的延伸，而是一台带着更高层目的的机体。",
+    reading: "高同步加上高共感，让你的结果偏向 Mark.06 使徒侧。你对情绪和气氛的捕捉很快，但行动不一定会跟着出来。",
+    tension: "你能读懂没说出口的东西。但容易把理解误认为已经解决。",
     shareLine: "测试把我分到 Mark.06 使徒侧记录：感知很准，行动很慢。",
     theme: THEMES.mark06,
   },
@@ -399,9 +399,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン八号機",
     marker: "08",
     route: "WILLE 机体 / 远程支援",
-    lore: "八号机属于 WILLE 阵营，粉色机体和多眼设计让它很容易被记住。它更常承担远程支援和战场观察。",
-    reading: "你的战术性高，攻击性不一定高。八号机对应的是距离、观察和精确介入，而不是一开始就冲进中心。",
-    tension: "优势是看得全；风险是太习惯站在远处，错过需要直接表态的时刻。",
+    lore: "八号机属于 WILLE 阵营，粉色机体和多眼设计让人过目不忘。它更多承担远程支援和战场观察的角色。",
+    reading: "你的计划性高，攻击性不一定高。八号机对应的是距离、观察和精确介入，而不是一开始就冲进中心。",
+    tension: "你看得全面。但太习惯站在远处，容易错过需要直接表态的时刻。",
     shareLine: "测试把我分到八号机：不站最前，但会瞄准。",
     theme: THEMES.unit08,
   },
@@ -411,9 +411,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン八号機 WILLE装備",
     marker: "08",
     route: "WILLE 配置 / 反 NERV 线路",
-    lore: "八号机的立场不属于传统 NERV 系统。它的叙事重点是脱离原指挥链后，仍然保持作战能力。",
-    reading: "你的独立性和战术性都高，信任度偏低。结果不是简单叛逆，而是你更愿意先验证系统，再决定是否服从。",
-    tension: "优势是不容易被话术带走；风险是长期把怀疑当成唯一安全感。",
+    lore: "八号机的立场不属于传统 NERV 系统。它的故事重点是脱离原指挥链之后，仍然保持作战能力。",
+    reading: "你的独立性和计划性都高，信任度偏低。这不是简单的叛逆，而是你更愿意先验证系统，再决定要不要服从。",
+    tension: "你不容易被话术带走。但长期把怀疑当成唯一安全感，会累。",
     shareLine: "测试把我分到八号机 WILLE 配置：不是不合作，是先看指挥权给谁。",
     theme: THEMES.unit08,
   },
@@ -423,9 +423,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン九号機",
     marker: "09",
     route: "Adams 容器 / 复制线路",
-    lore: "九号机在新剧场版中带有容器和复制的意味。它借用零号机的视觉记忆，却不是同一台机体。",
-    reading: "你的责任感高，外显自我低。九号机对应的是编号、替代和任务优先，而不是强烈的个人叙述。",
-    tension: "优势是能进入角色；风险是进入得太彻底，忘了角色不是本人。",
+    lore: "九号机在新剧场版里带着容器和复制的意味。它借用了零号机的视觉记忆，却不是同一台机体。",
+    reading: "你的责任感高，自我关注低。九号机对应的是编号、替代和任务优先，而不是强烈的个人叙事。",
+    tension: "你能很快进入角色。风险是进入得太彻底，忘了角色不是自己。",
     shareLine: "测试把我分到九号机：名字不重要，编号会工作。",
     theme: THEMES.unit09,
   },
@@ -435,9 +435,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン九号機 Adamsの器",
     marker: "09",
     route: "Adams 容器 / 零号机回声",
-    lore: "九号机看起来像零号机的延续，但它在剧情中承担的是另一套系统目的。熟悉的外观并不等于熟悉的核心。",
-    reading: "你的同步反应稳定，但精神韧性和自我表达没有同等外放。结果落在九号机容器线，是因为你更像承载某种安排，而不是主动宣布自己。",
-    tension: "优势是适应性强；风险是别人给出的定义会占用太多空间。",
+    lore: "九号机看起来像零号机的延续，但在剧情里承担的是另一套系统目的。熟悉的外观不等于熟悉的核心。",
+    reading: "你的同步反应稳定，但抗压能力和自我表达没有同等外放。结果落在容器线，因为你更像是在承载某种安排，而不是主动宣布自己。",
+    tension: "你的适应性很强。但别人给出的定义容易占用太多你的空间。",
     shareLine: "测试把我分到九号机 Adams 容器：像旧档案，但核心已经换了。",
     theme: THEMES.unit09,
   },
@@ -447,9 +447,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン第13号機",
     marker: "13",
     route: "双插入栓 / 双重驾驶",
-    lore: "十三号机采用双插入栓系统，并和第四次冲击相关。它的关键不是强，而是两套意识被安排进入同一个结构。",
-    reading: "你的高同步和高共情让结果落在十三号机。你容易同时理解两个方向，也容易在两套判断之间承担过多。",
-    tension: "优势是能容纳复杂性；风险是复杂性最后都压到你一个人身上。",
+    lore: "十三号机用双插入栓系统，和第四次冲击有关。它的重点不是强，而是两套意识被放进同一个结构里。",
+    reading: "你的同步率和共感都很高。你容易同时理解两个方向，也容易在两套判断之间承担过多。",
+    tension: "你能容纳复杂性。但复杂性最后容易都压到你一个人身上。",
     shareLine: "测试把我分到十三号机：两个判断同时在线。",
     theme: THEMES.unit13,
   },
@@ -459,9 +459,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン第13号機 覚醒",
     marker: "13",
     route: "觉醒记录 / 冲击节点",
-    lore: "十三号机的觉醒和冲击事件绑定。它不是普通作战升级，而是剧情结构中被设计成触发节点的机体。",
-    reading: "你的同步率、精神韧性和存在追问都偏高。测试把你推向觉醒记录，是因为你会把问题追到结构本身，而不只解决表面冲突。",
-    tension: "优势是能看见根因；风险是解决根因之前，周围的人已经被卷进来。",
+    lore: "十三号机的觉醒和冲击事件绑在一起。它不是普通的作战升级，而是剧情里被设计成触发节点的机体。",
+    reading: "你的同步率、抗压能力和意义感都偏高。你会把问题追到结构本身，而不只是解决表面冲突。",
+    tension: "你能看到根因。但在你解决根因之前，周围的人可能已经被卷进来了。",
     shareLine: "测试把我分到十三号机觉醒：不是升级，是触发。",
     theme: THEMES.unit13,
   },
@@ -471,9 +471,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン改8号機＋弐号機",
     marker: "8+2",
     route: "合体方案 / 双系统作战",
-    lore: "8+2号机来自八号机与贰号机的合体构想。它的视觉重点就是不对称：远程支援和近战输出被放进同一套系统。",
+    lore: "8+2 号机来自八号机和贰号机的合体构想。它的视觉重点就是不对称——远程支援和近战输出被塞进同一套系统。",
     reading: "你的结果同时出现强行动和强判断。它不追求统一人格，而是让两种作战逻辑并行：一边观察，一边推进。",
-    tension: "优势是可切换；风险是切换太快，别人跟不上你的节奏。",
+    tension: "你可以随时切换。但切换太快，别人跟不上你的节奏。",
     shareLine: "测试把我分到 8+2号机：一半瞄准，一半冲锋。",
     theme: THEMES.unit82,
   },
@@ -483,9 +483,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン改8号機＋弐号機 非対称装備",
     marker: "8+2",
     route: "非对称配置 / 混合作战",
-    lore: "8+2号机的重点不是融合成一种风格，而是承认两边系统都存在。红与粉、近战与远程，本来就不需要完全调和。",
-    reading: "你的决断力、表达和责任感同时靠前。这个结果说明你的优势来自混合结构，而不是均衡。",
-    tension: "优势是覆盖面大；风险是没有人能简单概括你，于是你也懒得解释。",
+    lore: "8+2 号机的重点不是融合成一种风格，而是承认两边系统都存在。红与粉、近战与远程，本来就不需要完全调和。",
+    reading: "你的决断力、表达欲和责任感同时靠前。你的优势来自混合结构，而不是均衡。",
+    tension: "你的覆盖面很大。但没人能简单概括你，于是你也懒得解释。",
     shareLine: "测试把我分到 8+2号机非对称配置：不均衡，但有效。",
     theme: THEMES.unit82,
   },
@@ -495,9 +495,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "人類補完計画",
     marker: "LCL",
     route: "特殊结果 / AT 力场溶解",
-    lore: "补完计划不是某一台 EVA，而是 EVA 世界观里关于个体边界的终点设定。它把孤独、误解和自我边界放到同一个问题里。",
-    reading: "你的结果触发补完线，说明测试读到的是高共情和低边界的组合。你更在意隔阂被消除，而不是每个人都保持完整距离。",
-    tension: "优势是能靠近别人；风险是靠近到最后，自己的轮廓变得不清楚。",
+    lore: "补完计划不是某一台 EVA，而是 EVA 世界观里关于个体边界的终极设定。它把孤独、误解和自我边界放进了同一个问题。",
+    reading: "你触发了补完线，说明测试读到的是高共感加上低边界的组合。你更在意隔阂能不能消除，而不是每个人都保持完整距离。",
+    tension: "你能靠近别人。但靠近到最后，自己的轮廓会变得不清楚。",
     shareLine: "测试把我分到人类补完计划：边界感很低，理解欲很高。",
     theme: THEMES.special,
   },
@@ -507,9 +507,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "エヴァンゲリオン第13号機 覚醒",
     marker: "13",
     route: "特殊结果 / 冲击触发",
-    lore: "十三号机觉醒线和双插入栓、使徒、冲击事件绑定。它代表的不是更强的驾驶，而是系统被推进到无法回退的阶段。",
-    reading: "这个特殊结果来自高同步和高存在追问。测试读到的不是普通好奇心，而是会把问题一直追到边界之外。",
-    tension: "优势是能推动变化；风险是变化一旦启动，很难只影响你自己。",
+    lore: "十三号机觉醒线和双插入栓、使徒、冲击事件绑在一起。它代表的不是更强的驾驶，而是系统被推进到无法回退的阶段。",
+    reading: "这个特殊结果来自高同步和高意义感。测试读到的不是普通的好奇心，而是你会把问题一直追到边界之外。",
+    tension: "你能推动变化。但变化一旦启动，很难只影响你自己。",
     shareLine: "测试把我分到十三号机觉醒：系统已经过阈值。",
     theme: THEMES.unit13,
   },
@@ -519,9 +519,9 @@ const PROFILES: Record<string, ResultProfile> = {
     jpName: "第一使徒 アダム",
     marker: "A",
     route: "特殊结果 / 非机体适格",
-    lore: "Adam 不是 EVA 机体，而是 EVA 世界观中的起源性存在。这个结果用于表示数据无法稳定归入常规机体谱系。",
-    reading: "你的结果没有落在普通机体上，说明测试向量过于分散或距离模板都很远。它不是稀有夸奖，更像系统无法归档。",
-    tension: "优势是很难被现成标签限制；风险是别人也很难快速理解你的运行方式。",
+    lore: "Adam 不是 EVA 机体，而是 EVA 世界观中的起源性存在。这个结果表示数据无法稳定归入常规机体谱系。",
+    reading: "你的结果没有落在普通机体上，说明测试向量过于分散，或者距离所有模板都很远。它不是稀有夸奖，更像系统无法归档。",
+    tension: "你很难被现成标签限制。但别人也很难快速理解你的运行方式。",
     shareLine: "测试把我分到第一使徒 Adam：系统没有找到合适机体。",
     theme: THEMES.special,
   },
@@ -532,8 +532,8 @@ const PROFILES: Record<string, ResultProfile> = {
     marker: "00",
     route: "特殊结果 / 原型机共鸣",
     lore: "零号机共鸣线把原型机的容器感和绫波相关的存在主题放在一起。它不是战斗配置，而是核心反应。",
-    reading: "这个结果来自低外显、高责任和对被需要感的反应。测试读到的是一种安静的连接需求，而不是强烈占有。",
-    tension: "优势是能长期保持温和的稳定；风险是太容易把被需要当成存在证明。",
+    reading: "这个结果来自低外放、高责任感和对被需要的反应。测试读到的是一种安静的连接需求，而不是强烈的占有欲。",
+    tension: "你能长期保持温和的稳定。但太容易把被需要当成存在证明。",
     shareLine: "测试把我分到零号机共鸣：安静地连接，安静地承担。",
     theme: THEMES.unit00,
   },
@@ -763,8 +763,26 @@ export default function ResultScreen({
   const [returnCopied, setReturnCopied] = useState(false);
   const [inviteNameInput, setInviteNameInput] = useState("");
   const [relayBranchCount, setRelayBranchCount] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const successfulInviteKeysRef = useRef<Set<RelayInviteKey>>(new Set());
   const trackedRelayBranchReadyRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (containerRef.current) {
+        await containerRef.current.requestFullscreen();
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
   const top = result.top;
   const profile = getProfile(top);
   const topDimensions = useMemo(() => {
@@ -1180,7 +1198,8 @@ export default function ResultScreen({
 
   return (
     <div
-      className="flex-1 overflow-y-auto overflow-x-hidden"
+      ref={containerRef}
+      className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar"
       style={{
         ...themeStyle,
         background:
@@ -1194,9 +1213,18 @@ export default function ResultScreen({
         <span className="text-[0.72rem] tracking-[0.14em]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
           SYNC {top.similarity.toFixed(1)}%
         </span>
-        <span className="text-[0.68rem] text-[#777] tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)" }}>
-          {top.isSpecial ? "SPECIAL" : top.isBoundary ? "BOUNDARY" : "MATCH"}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleFullscreen}
+            className="text-[#777] transition-colors hover:text-white"
+            aria-label={isFullscreen ? "退出全屏" : "全屏"}
+          >
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+          <span className="text-[0.68rem] text-[#777] tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)" }}>
+            {top.isSpecial ? "SPECIAL" : top.isBoundary ? "BOUNDARY" : "MATCH"}
+          </span>
+        </div>
       </div>
 
       <motion.section

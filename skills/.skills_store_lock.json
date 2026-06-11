@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "name": "Frontend Design",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=frontend-design",
+      "source": "skillhub",
+      "version": "1.0.0"
+    },
+    "webapp-testing-anthropic": {
+      "name": "Webapp Testing Anthropic",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=webapp-testing-anthropic",
+      "source": "skillhub",
+      "version": "1.0.0"
+    }
+  }
+}

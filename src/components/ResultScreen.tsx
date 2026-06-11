@@ -1286,76 +1286,7 @@ export default function ResultScreen({
         className="px-5 py-5 border-b border-white/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.12, duration: 0.4 }}
-      >
-        <div
-          className="border border-white/10 p-4"
-          style={{
-            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.22))",
-            borderLeft: "3px solid var(--unit-primary)",
-          }}
-        >
-          <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-start min-[430px]:justify-between mb-4">
-            <div className="min-w-0">
-              <p className="text-[0.62rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
-                QUICK RELAY
-              </p>
-              <p className="text-[0.92rem] leading-[1.65] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-                先找一个人接下一站。反差越明确，编队越容易聊下去。
-              </p>
-            </div>
-            <div className="shrink-0 border border-white/10 px-3 py-2 text-right" style={{ background: "rgba(0,0,0,0.22)" }}>
-              <p className="text-[0.52rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                NODE
-              </p>
-              <p className="mt-1 text-[1.2rem] leading-none" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}>
-                {relayNodeLabel}
-              </p>
-            </div>
-          </div>
-
-          <label className="mb-3 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
-            <span className="block text-[0.54rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-              DIRECT CALL
-            </span>
-            <input
-              value={inviteNameInput}
-              onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
-              maxLength={12}
-              placeholder="填一个称呼，分享会更像点名"
-              className="mt-2 h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
-              style={{ fontFamily: "var(--font-title)" }}
-            />
-          </label>
-
-          <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-2">
-            {relayInviteOptions.map((invite) => (
-              <button
-                key={`quick-${invite.key}`}
-                onClick={() => shareInvite(invite, "quick")}
-                className="min-h-[68px] border border-white/10 px-2 py-2 text-left transition-colors hover:border-white/30 flex flex-col justify-between"
-                style={{ background: "rgba(0,0,0,0.2)" }}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    {invite.label}
-                  </span>
-                  <Share2 size={12} aria-hidden="true" style={{ color: "var(--unit-secondary)" }} />
-                </span>
-                <span className="mt-2 text-[0.88rem] leading-tight text-[#e5e5e5]" style={{ fontFamily: "var(--font-title)" }}>
-                  {copiedInviteKey === invite.key ? "READY" : invite.title}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
-      <motion.section
-        className="px-5 py-5 border-b border-white/10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.16, duration: 0.4 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.2)" }}>
@@ -1381,7 +1312,7 @@ export default function ResultScreen({
         className="px-5 py-5 border-b border-white/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
@@ -1424,7 +1355,7 @@ export default function ResultScreen({
         className="px-5 py-5 border-b border-white/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.28, duration: 0.4 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
       >
         <div className="border-l-[3px] pl-4" style={{ borderColor: "var(--unit-primary)" }}>
           <p className="text-[0.68rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
@@ -1440,7 +1371,7 @@ export default function ResultScreen({
         className="px-5 py-5 border-b border-white/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.32, duration: 0.4 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
       >
         <div
           className="border border-white/10 p-4"
@@ -1496,25 +1427,6 @@ export default function ResultScreen({
               )}
             </div>
           </div>
-
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-end">
-            <p className="text-[0.92rem] leading-[1.7] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-              {invitePrompt}
-              <span className="block mt-1 text-[#aaa]">{relayPrompt}</span>
-            </p>
-            <div className="flex gap-2 sm:justify-end">
-              {topDimensions.slice(0, 3).map((d) => (
-                <span
-                  key={`chain-${DIMENSIONS[d.index].code}`}
-                  className="min-w-[52px] h-8 px-2 border border-white/10 flex items-center justify-center text-[0.68rem]"
-                  style={{ color: "var(--unit-secondary)", background: "rgba(0,0,0,0.2)", fontFamily: "var(--font-tech)" }}
-                >
-                  {DIMENSIONS[d.index].code}
-                  {GRADE_LABELS[d.grade]}
-                </span>
-              ))}
-            </div>
-          </div>
         </div>
       </motion.section>
 
@@ -1523,7 +1435,7 @@ export default function ResultScreen({
           className="px-5 py-5 border-b border-white/10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.36, duration: 0.4 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
         >
           <div
             className="border border-white/10 p-4"
@@ -1595,7 +1507,7 @@ export default function ResultScreen({
         className="px-5 py-5"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.38, duration: 0.4 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
@@ -1639,33 +1551,56 @@ export default function ResultScreen({
       </motion.section>
 
       <motion.section
-        className="px-5 py-5 border-b border-white/10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.42, duration: 0.4 }}
+        className="px-5 pt-5 pb-8 border-t border-white/10"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.35 }}
       >
-        <div className="flex flex-col gap-3 min-[430px]:flex-row min-[430px]:items-start min-[430px]:justify-between mb-4">
-          <div>
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <button
+            onClick={shareResult}
+            className="h-12 border text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
+            style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+          >
+            <Share2 size={15} aria-hidden="true" />
+            SHARE
+          </button>
+          <button
+            onClick={() => copyResult("copy")}
+            className="h-12 border border-white/15 text-[#aaa] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+            style={{ fontFamily: "var(--font-tech)" }}
+          >
+            <Copy size={15} aria-hidden="true" />
+            {copied ? "COPIED" : "COPY"}
+          </button>
+          <button
+            onClick={onRestart}
+            className="h-12 border border-white/15 text-[#888] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+            style={{ fontFamily: "var(--font-tech)" }}
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+            RETEST
+          </button>
+        </div>
+
+        <div
+          className="border border-white/10 p-4"
+          style={{
+            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
+          }}
+        >
+          <div className="mb-3">
             <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
               NEXT RELAY
             </h2>
             <p className="mt-2 text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-              我这站是 {profile.displayName} / NODE {relayNodeLabel}。选一个最像 TA 的位置发出去，让下一站更容易接上。
+              {invitePrompt}
+              <span className="block mt-1 text-[#aaa]">{relayPrompt}</span>
             </p>
           </div>
-          <button
-            onClick={() => shareInvite(generalInvite)}
-            className="h-9 px-3 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex shrink-0 items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
-            style={{ fontFamily: "var(--font-tech)" }}
-          >
-            <Share2 size={13} aria-hidden="true" />
-            {copiedInviteKey === "general" ? "READY" : "SEND INVITE"}
-          </button>
-        </div>
 
-        <div className="mb-3 grid grid-cols-1 min-[430px]:grid-cols-[minmax(0,1fr)_auto] gap-2 min-[430px]:items-center border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
-          <label className="min-w-0">
-            <span className="block text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+          <label className="mb-3 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
+            <span className="block text-[0.54rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
               DIRECT CALL
             </span>
             <input
@@ -1676,114 +1611,52 @@ export default function ResultScreen({
               className="mt-2 h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
               style={{ fontFamily: "var(--font-title)" }}
             />
+            <span className="block mt-1 text-[0.68rem] text-[#666]">
+              {hasNamedInvite ? "已切换为点名接力。" : "不填也可以直接发送。"}
+            </span>
           </label>
-          <span
-            className="min-[430px]:w-[128px] text-[0.72rem] leading-[1.45] text-[#888]"
-            style={{ fontFamily: "var(--font-title)" }}
-          >
-            {hasNamedInvite ? "已切换为点名接力。" : "不填也可以直接发送。"}
-          </span>
-        </div>
 
-        <div className="mb-3 border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.18)" }}>
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-              BRANCH READY
+          <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-2">
+            {relayInviteOptions.map((invite) => (
+              <button
+                key={invite.key}
+                onClick={() => shareInvite(invite)}
+                className="min-h-[56px] border border-white/10 px-2 py-2 text-left transition-colors hover:border-white/30 flex flex-col justify-between"
+                style={{ background: "rgba(0,0,0,0.2)" }}
+              >
+                <span className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+                  {invite.label}
+                </span>
+                <span className="mt-1 text-[0.88rem] leading-tight text-[#e5e5e5]" style={{ fontFamily: "var(--font-title)" }}>
+                  {copiedInviteKey === invite.key ? "READY" : invite.title}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-[0.72rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
+              {relayBranchCount >= 2
+                ? "两条邀请已发出，编队开始分支。"
+                : "建议发给两个不同位置的人，让编队分出去。"}
             </span>
             <span className="text-[0.72rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
               {relayBranchCount}/2
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            {[0, 1].map((index) => (
-              <div key={index} className="h-2 bg-white/10 overflow-hidden">
-                <div
-                  className="h-full transition-all"
-                  style={{
-                    width: relayBranchCount > index ? "100%" : "0%",
-                    background: "linear-gradient(90deg, var(--unit-primary), var(--unit-secondary))",
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <p className="text-[0.76rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
-            {relayBranchCount >= 2
-              ? "两条下一站已经发出，编队开始分支。"
-              : "建议发给两个不同位置的人，让这条编队真的分出去。"}
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {relayInviteOptions.slice(1).map((invite) => (
-            <div
-              key={invite.key}
-              className="border border-white/10 p-3 min-h-[148px] flex flex-col"
-              style={{
-                background: "rgba(0,0,0,0.2)",
-                borderTop: "2px solid var(--unit-primary)",
-              }}
-            >
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="min-w-0">
-                  <p className="text-[0.55rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    {invite.label}
-                  </p>
-                  <p className="mt-1 text-[1rem] leading-tight text-white" style={{ fontFamily: "var(--font-title)" }}>
-                    {invite.title}
-                  </p>
-                </div>
-                <button
-                  onClick={() => shareInvite(invite)}
-                  className="h-8 min-w-[68px] px-2 border border-white/15 text-[0.58rem] tracking-[0.12em] text-[#aaa] flex shrink-0 items-center justify-center gap-1 transition-colors hover:text-white hover:border-white/30"
-                  style={{ fontFamily: "var(--font-tech)" }}
-                >
-                  <Share2 size={12} aria-hidden="true" />
-                  {copiedInviteKey === invite.key ? "READY" : "SEND"}
-                </button>
-              </div>
-              <p className="text-[0.82rem] leading-[1.65] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-                {invite.target}
-              </p>
-              <p className="mt-auto pt-3 text-[0.72rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
-                {invite.reason}
-              </p>
-            </div>
-          ))}
-        </div>
+        {relayRelation ? (
+          <button
+            onClick={shareReturn}
+            className="mt-3 w-full h-10 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
+            style={{ fontFamily: "var(--font-tech)" }}
+          >
+            <Share2 size={13} aria-hidden="true" />
+            {returnCopied ? "READY" : "SEND RETURN TO UPSTREAM"}
+          </button>
+        ) : null}
       </motion.section>
-
-      <motion.div
-        className="grid grid-cols-1 min-[430px]:grid-cols-3 gap-3 px-5 pb-8 pt-2"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.46, duration: 0.35 }}
-      >
-        <button
-          onClick={shareResult}
-          className="h-12 border text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
-          style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
-        >
-          <Share2 size={15} aria-hidden="true" />
-          SHARE
-        </button>
-        <button
-          onClick={() => copyResult("copy")}
-          className="h-12 border border-white/15 text-[#aaa] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
-          style={{ fontFamily: "var(--font-tech)" }}
-        >
-          <Copy size={15} aria-hidden="true" />
-          {copied ? "COPIED" : "COPY"}
-        </button>
-        <button
-          onClick={onRestart}
-          className="h-12 border border-white/15 text-[#888] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
-          style={{ fontFamily: "var(--font-tech)" }}
-        >
-          <RotateCcw size={15} aria-hidden="true" />
-          RETEST
-        </button>
-      </motion.div>
     </div>
   );
 }

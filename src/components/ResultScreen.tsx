@@ -242,9 +242,9 @@ const PROFILES: Record<string, ResultProfile> = {
     modelName: "EVANGELION-01 BERSERK STATE",
     jpName: "エヴァンゲリオン初号機 暴走",
     marker: "01",
-    route: "暴走记录 / 临界同步",
+    route: "暴走状态 / 临界同步",
     lore: "初号机暴走不是普通的故障。原作里它是机体意志、驾驶员崩溃和核心反应同时爆发的事件。",
-    reading: "你的同步率、心理韧性和攻击反应都很高，被推到了暴走记录。重点不是你脾气大，而是压力超过阈值之后，你会直接接管行动。",
+    reading: "你的同步率、心理韧性和攻击反应都很高，被推到了暴走状态。重点不是你脾气大，而是压力超过阈值之后，你会直接接管行动。",
     tension: "你最强的地方是危机里会自己动起来。最危险的地方也在这里——事后你未必解释得清每一步。",
     shareLine: "测试把我分到初号机暴走：不是稳定输出，是临界反应。",
     theme: THEMES.unit01,
@@ -290,7 +290,7 @@ const PROFILES: Record<string, ResultProfile> = {
     modelName: "EVANGELION-00 REFIT",
     jpName: "エヴァンゲリオン零号機 改",
     marker: "00",
-    route: "改装原型机 / 防御记录",
+    route: "改装原型机 / 防御型",
     lore: "零号机改看起来更像正式机体了，但它保留了原型机的冷感。原作里它经常被放在保护、测试和牺牲的位置上。",
     reading: "你的边界感和责任感都很高，但同步率和共情阈的外放不强。你更像先完成保护，再决定要不要解释原因。",
     tension: "你的边界很清晰。风险是别人只看得见你的克制，看不见克制背后的投入。",
@@ -310,15 +310,15 @@ const PROFILES: Record<string, ResultProfile> = {
     theme: THEMES.unit03,
   },
   SACR03: {
-    displayName: "EVA 参号机侵蚀记录",
+    displayName: "EVA 参号机 侵蚀态",
     modelName: "EVANGELION-03 CONTAMINATION LOG",
     jpName: "エヴァンゲリオン参号機 侵食記録",
     marker: "03",
-    route: "侵蚀记录 / 高责任阈值",
+    route: "侵蚀态 / 高责任阈值",
     lore: "参号机最重要的剧情不是性能，而是被侵蚀之后的不可逆处境。机体变成敌人时，驾驶员还困在系统里面。",
     reading: "你的责任感过高，同时同步率和独立性也不低。这意味着局面已经不公平时，你仍然倾向于留在里面解决。",
     tension: "你不会轻易退出。风险是你太晚才承认自己也需要撤离。",
-    shareLine: "测试把我分到参号机侵蚀记录：不是不怕，是没退出。",
+    shareLine: "测试把我分到参号机 侵蚀态：不是不怕，是没退出。",
     theme: THEMES.unit03,
   },
   VAN04: {
@@ -326,7 +326,7 @@ const PROFILES: Record<string, ResultProfile> = {
     modelName: "EVANGELION-04 EXPERIMENTAL",
     jpName: "エヴァンゲリオン四号機",
     marker: "04",
-    route: "试验机 / S2 机关记录",
+    route: "试验机 / S2 机关",
     lore: "四号机在原作里几乎没有实战记录。它和 S2 机关试验、第二支部消失这些资料性事件连在一起。",
     reading: "你的数据偏向理论稳定和低可见度。匹配四号机不是因为空白，而是因为你的很多关键反应不会在日常场景里被看到。",
     tension: "你能在复杂系统里保持冷静。但你的存在感容易被误判成缺席。",
@@ -382,15 +382,15 @@ const PROFILES: Record<string, ResultProfile> = {
     theme: THEMES.mark06,
   },
   ANGEL06: {
-    displayName: "EVA Mark.06 使徒侧记录",
+    displayName: "EVA Mark.06 使徒侧",
     modelName: "EVANGELION Mark.06 ANGELIC TRACE",
     jpName: "エヴァンゲリオン Mark.06 使徒側記録",
     marker: "06",
-    route: "使徒侧记录 / 高共情阈",
+    route: "使徒侧 / 高共情阈",
     lore: "Mark.06 在设定上一直带着接近使徒的暧昧感。它不是普通量产线的延伸，而是一台带着更高层目的的机体。",
     reading: "高同步加上高共情阈，让你的结果偏向 Mark.06 使徒侧。你对情绪和气氛的捕捉很快，但行动不一定会跟着出来。",
     tension: "你能读懂没说出口的东西。但容易把理解误认为已经解决。",
-    shareLine: "测试把我分到 Mark.06 使徒侧记录：感知很准，行动很慢。",
+    shareLine: "测试把我分到 Mark.06 使徒侧：感知很准，行动很慢。",
     theme: THEMES.mark06,
   },
   SNIP08: {
@@ -422,7 +422,7 @@ const PROFILES: Record<string, ResultProfile> = {
     modelName: "EVANGELION Mark.09 / ADAMS VESSEL",
     jpName: "エヴァンゲリオン九号機",
     marker: "09",
-    route: "Adams 容器 / 复制线路",
+    route: "Adams之器 / 复制线路",
     lore: "九号机在新剧场版里带着容器和复制的意味。它借用了零号机的视觉记忆，却不是同一台机体。",
     reading: "你的责任感高，自我参照度低。九号机对应的是编号、替代和任务优先，而不是强烈的个人叙事。",
     tension: "你能很快进入角色。风险是进入得太彻底，忘了角色不是自己。",
@@ -430,15 +430,15 @@ const PROFILES: Record<string, ResultProfile> = {
     theme: THEMES.unit09,
   },
   ECHO09: {
-    displayName: "EVA 九号机 Adams 容器",
+    displayName: "EVA 九号机 Adams之器",
     modelName: "EVANGELION Mark.09 ADAMS VESSEL",
     jpName: "エヴァンゲリオン九号機 Adamsの器",
     marker: "09",
-    route: "Adams 容器 / 零号机回声",
+    route: "Adams之器 / 零号机回声",
     lore: "九号机看起来像零号机的延续，但在剧情里承担的是另一套系统目的。熟悉的外观不等于熟悉的核心。",
-    reading: "你的同步反应稳定，但心理韧性和自我表达没有同等外放。结果落在容器线，因为你更像是在承载某种安排，而不是主动宣布自己。",
+    reading: "你的同步反应稳定，但心理韧性和自我表达没有同等外放。结果落在 Adams之器线，因为你更像是在承载某种安排，而不是主动宣布自己。",
     tension: "你的适应性很强。但别人给出的定义容易占用太多你的空间。",
-    shareLine: "测试把我分到九号机 Adams 容器：像旧档案，但核心已经换了。",
+    shareLine: "测试把我分到九号机 Adams之器：像旧档案，但核心已经换了。",
     theme: THEMES.unit09,
   },
   DUAL13: {
@@ -458,7 +458,7 @@ const PROFILES: Record<string, ResultProfile> = {
     modelName: "EVANGELION-13 AWAKENED",
     jpName: "エヴァンゲリオン第13号機 覚醒",
     marker: "13",
-    route: "觉醒记录 / 冲击节点",
+    route: "觉醒态 / 冲击节点",
     lore: "十三号机的觉醒和冲击事件绑在一起。它不是普通的作战升级，而是剧情里被设计成触发节点的机体。",
     reading: "你的同步率、心理韧性和存在敏感度都偏高。你会把问题追到结构本身，而不只是解决表面冲突。",
     tension: "你能看到根因。但在你解决根因之前，周围的人可能已经被卷进来了。",
@@ -544,7 +544,7 @@ const DEFAULT_PROFILE: ResultProfile = {
   modelName: "UNCLASSIFIED EVANGELION RECORD",
   jpName: "未確認エヴァンゲリオン",
   marker: "?",
-  route: "未确认记录",
+  route: "未分类",
   lore: "当前结果不在本地机体档案中。系统会保留匹配率和维度记录，但不强行套入常规机体。",
   reading: "这通常表示数据版本和展示档案不一致，或者结果来自新增机体。",
   tension: "优势和风险需要根据详细维度重新判读。",
@@ -589,57 +589,57 @@ function inferDisplayName(match: MatchResult, unitKey: string, baseName: string)
   if (unitKey === "unit01") {
     if (/暴走|bers/i.test(name) || match.code === "BERS") return "EVA 初号机暴走";
     if (/觉醒|醒|reso/i.test(name) || match.code === "RESO") return "EVA 初号机觉醒";
-    if (/进化|evo/i.test(name) || match.code === "EVOU") return "EVA 初号机进化记录";
+    if (/进化|evo/i.test(name) || match.code === "EVOU") return "EVA 初号机 进化态";
     return "EVA 初号机";
   }
 
   if (unitKey === "unit02") {
     if (/反击|rebu/i.test(name) || match.code === "REBU") return "EVA 贰号机反击配置";
-    if (/怒火|烈焰|fury/i.test(name) || match.code === "FURY") return "EVA 贰号机火力记录";
+    if (/怒火|烈焰|fury/i.test(name) || match.code === "FURY") return "EVA 贰号机 火力型";
     return "EVA 贰号机";
   }
 
   if (unitKey === "unit00") {
-    if (/人偶|doll/i.test(name) || match.code === "DOLL") return "EVA 零号机容器记录";
+    if (/人偶|doll/i.test(name) || match.code === "DOLL") return "EVA 零号机 人偶";
     if (/微笑|绫波|rei|smi/i.test(name) || match.code === "SMIY" || match.code === "REII") return "EVA 零号机共鸣";
-    if (/虚无|void/i.test(name) || match.code === "VOID") return "EVA 零号机静默记录";
+    if (/虚无|void/i.test(name) || match.code === "VOID") return "EVA 零号机 虚無";
     return "EVA 零号机";
   }
 
   if (unitKey === "unit03") {
-    if (/献身|牺牲|sacr/i.test(name) || match.code === "SACR") return "EVA 参号机侵蚀记录";
+    if (/献身|牺牲|sacr/i.test(name) || match.code === "SACR") return "EVA 参号机 侵蚀态";
     if (/守护|gard/i.test(name) || match.code === "GARD") return "EVA 参号机守护配置";
-    if (/领袖|lead/i.test(name) || match.code === "LEAD") return "EVA 参号机指挥记录";
+    if (/领袖|lead/i.test(name) || match.code === "LEAD") return "EVA 参号机 指挥型";
     return "EVA 参号机";
   }
 
   if (unitKey === "mark06") {
-    if (/天使|使徒|angl/i.test(name) || match.code === "ANGL") return "EVA Mark.06 使徒侧记录";
-    if (/宿命|fate/i.test(name) || match.code === "FATE") return "EVA Mark.06 月面记录";
-    if (/自由|free/i.test(name) || match.code === "FREE") return "EVA Mark.06 自由配置";
+    if (/天使|使徒|angl/i.test(name) || match.code === "ANGL") return "EVA Mark.06 使徒侧";
+    if (/宿命|fate/i.test(name) || match.code === "FATE") return "EVA Mark.06 月面型";
+    if (/自由|free/i.test(name) || match.code === "FREE") return "EVA Mark.06 自由型";
     return "EVA Mark.06";
   }
 
   if (match.evaUnit && match.evaUnit !== "综合评定") return match.evaUnit;
-  if (match.code === "BALA") return "MAGI 平衡适格记录";
-  if (match.code === "ADPT") return "MAGI 适应适格记录";
-  if (match.code === "FLUX") return "MAGI 流变适格记录";
-  if (match.code === "WATC") return "MAGI 观察适格记录";
+  if (match.code === "BALA") return "MAGI 平衡型";
+  if (match.code === "ADPT") return "MAGI 适应型";
+  if (match.code === "FLUX") return "MAGI 流变型";
+  if (match.code === "WATC") return "MAGI 观察型";
   return baseName;
 }
 
 function inferRoute(match: MatchResult, displayName: string, baseRoute: string): string {
   if (displayName.includes("MAGI")) return "综合评定 / 未指定机体";
-  if (displayName.includes("暴走")) return "暴走记录 / 临界同步";
-  if (displayName.includes("觉醒")) return "觉醒记录 / 高同步阈值";
+  if (displayName.includes("暴走")) return "暴走状态 / 临界同步";
+  if (displayName.includes("觉醒")) return "觉醒态 / 高同步阈值";
   if (displayName.includes("反击")) return "反击配置 / 实战适格";
-  if (displayName.includes("火力")) return "火力记录 / 高压推进";
-  if (displayName.includes("容器")) return "容器记录 / 原型机谱系";
-  if (displayName.includes("静默")) return "静默记录 / 低表征适格";
-  if (displayName.includes("侵蚀")) return "侵蚀记录 / 高责任阈值";
+  if (displayName.includes("火力")) return "火力型 / 高压推进";
+  if (displayName.includes("人偶")) return "人偶 / 原型机谱系";
+  if (displayName.includes("虚無")) return "虚無 / 低表征适格";
+  if (displayName.includes("侵蚀")) return "侵蚀态 / 高责任阈值";
   if (displayName.includes("守护")) return "守护配置 / 防御适格";
-  if (displayName.includes("指挥")) return "指挥记录 / 战场判断";
-  if (displayName.includes("使徒侧")) return "使徒侧记录 / 高共情阈";
+  if (displayName.includes("指挥")) return "指挥型 / 战场判断";
+  if (displayName.includes("使徒侧")) return "使徒侧 / 高共情阈";
   return baseRoute;
 }
 

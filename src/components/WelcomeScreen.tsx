@@ -50,11 +50,6 @@ export default function WelcomeScreen({
   const t = useT();
   const isRelayEntry = Boolean(inviteCode);
   const sourceRelayDepth = normalizeRelayDepth(relayDepth);
-  const nextRelayDepth = normalizeRelayDepth(sourceRelayDepth + 1);
-  const hasInviteContext = Boolean(shareUnit || inviteLabel || relayRelation || inviteNamed);
-  const relayChallengeKey = inviteTarget && ["contrast", "same_axis", "verify", "history"].includes(inviteTarget)
-    ? `welcome.relayChallenge.${inviteTarget}`
-    : "welcome.relayChallenge.general";
 
   useEffect(() => {
     const t1 = setTimeout(() => setBootPhase(1), isRelayEntry ? 120 : 400);
@@ -155,131 +150,81 @@ export default function WelcomeScreen({
           animate={bootPhase >= 3 ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.45, delay: 0.1 }}
         >
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="mb-3">
             <span
               className="text-[0.68rem] tracking-[0.22em] text-[var(--nerv-orange)]"
               style={{ fontFamily: "var(--font-tech)" }}
             >
               {t("welcome.relayTitle")}
             </span>
-            <span
-              className="text-[0.62rem] tracking-[0.16em] text-[#666]"
-              style={{ fontFamily: "var(--font-tech)" }}
-            >
-              {t("welcome.relayStatus")}
-            </span>
           </div>
-          <div className="border border-white/10 bg-black/25 px-3 py-2 mb-3">
-            <p
-              className="text-[1rem] leading-[1.25] break-all"
-              style={{ color: "var(--eva-green)", fontFamily: "var(--font-tech)" }}
+
+          {shareUnit && (
+            <div
+              className="border border-white/10 bg-black/25 px-3 py-3 mb-3"
+              style={{ borderLeft: "3px solid var(--nerv-orange)" }}
             >
-              {inviteCode}
-            </p>
-          </div>
-          {hasInviteContext && (
-            <div className="mb-3 grid grid-cols-1 min-[430px]:grid-cols-2 gap-2">
-              {shareUnit && (
-                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0 min-[430px]:col-span-2">
-                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    SOURCE UNIT
-                  </p>
-                  <p className="mt-1 text-[0.9rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
-                    {shareUnit}
-                  </p>
-                </div>
-              )}
-              {inviteLabel && (
-                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
-                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    INVITE MODE
-                  </p>
-                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
-                    {inviteLabel}
-                  </p>
-                </div>
-              )}
-              {relayRelation && (
-                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
-                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    RELATION
-                  </p>
-                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
-                    {relayRelation}
-                  </p>
-                </div>
-              )}
-              {inviteNamed && (
-                <div className="border border-white/10 bg-black/20 px-3 py-2 min-w-0">
-                  <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                    DIRECT CALL
-                  </p>
-                  <p className="mt-1 text-[0.82rem] leading-tight text-[#ddd] break-words" style={{ fontFamily: "var(--font-title)" }}>
-                    点名接力
-                  </p>
-                </div>
-              )}
+              <p className="text-[0.56rem] tracking-[0.16em] text-[#666] mb-1" style={{ fontFamily: "var(--font-tech)" }}>
+                TA 的结果
+              </p>
+              <p className="text-[1.05rem] leading-tight text-[#ddd] mb-1.5" style={{ fontFamily: "var(--font-title)" }}>
+                {shareUnit}
+              </p>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-[0.72rem] leading-[1.25] break-all"
+                  style={{ color: "var(--eva-green)", fontFamily: "var(--font-tech)" }}
+                >
+                  {inviteCode}
+                </span>
+                <span className="text-[0.62rem] text-[#555]">
+                  NODE {sourceRelayDepth.toString().padStart(2, "0")}
+                </span>
+              </div>
             </div>
           )}
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <div className="border border-white/10 bg-black/20 px-3 py-2">
-              <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                SOURCE NODE
-              </p>
-              <p className="mt-1 text-[1rem] leading-none" style={{ color: "var(--nerv-orange)", fontFamily: "var(--font-num)" }}>
-                {sourceRelayDepth.toString().padStart(2, "0")}
-              </p>
-            </div>
-            <div className="border border-white/10 bg-black/20 px-3 py-2">
-              <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                YOUR NODE
-              </p>
-              <p className="mt-1 text-[1rem] leading-none" style={{ color: "var(--eva-green)", fontFamily: "var(--font-num)" }}>
-                {nextRelayDepth.toString().padStart(2, "0")}
+
+          {!shareUnit && (
+            <div className="border border-white/10 bg-black/25 px-3 py-2 mb-3">
+              <p
+                className="text-[0.82rem] leading-[1.25] break-all"
+                style={{ color: "var(--eva-green)", fontFamily: "var(--font-tech)" }}
+              >
+                {inviteCode}
               </p>
             </div>
-          </div>
-          <p className="text-[0.92rem] leading-[1.7] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+          )}
+
+          <p className="text-[0.92rem] leading-[1.7] text-[#ddd] mb-3" style={{ fontFamily: "var(--font-title)" }}>
             {t("welcome.relayDesc")}
           </p>
-          <div className="mt-3 border-l-[3px] border-[var(--eva-green)] bg-black/20 px-3 py-2">
-            <p className="text-[0.56rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-              WHY YOU
+
+          <div className="border-l-[3px] border-[var(--eva-green)] bg-black/20 px-3 py-2 mb-3">
+            <p className="text-[0.56rem] tracking-[0.16em] text-[#666] mb-1" style={{ fontFamily: "var(--font-tech)" }}>
+              测完后你会看到
             </p>
-            <p className="mt-1 text-[0.86rem] leading-[1.6] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
-              {t(relayChallengeKey)}
-            </p>
+            <div className="space-y-1">
+              <p className="text-[0.82rem] leading-[1.5] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+                ① 你自己的机体匹配结果
+              </p>
+              <p className="text-[0.82rem] leading-[1.5] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+                ② 和 TA 的编队对照分析
+              </p>
+              <p className="text-[0.82rem] leading-[1.5] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+                ③ 你也可以继续分享给下一个人
+              </p>
+            </div>
           </div>
+
           <button
             onClick={onStart}
-            className="mt-3 w-full py-3 text-center text-[1rem] font-bold tracking-[2px] cursor-pointer
+            className="w-full py-3 text-center text-[1rem] font-bold tracking-[2px] cursor-pointer
                        border border-[var(--eva-green)] text-black bg-[var(--eva-green)]
                        uppercase transition-colors hover:bg-transparent hover:text-[var(--eva-green)]"
             style={{ fontFamily: "var(--font-title)", boxShadow: "0 0 18px rgba(82,255,0,0.22)" }}
           >
             {t("welcome.relayFastStart")}
           </button>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {[
-              ["01", t("welcome.relayStep1")],
-              ["02", t("welcome.relayStep2")],
-              ["03", t("welcome.relayStep3")],
-            ].map(([step, label]) => (
-              <div key={step} className="border border-white/10 bg-black/20 px-2 py-2 text-center">
-                <p className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                  STEP {step}
-                </p>
-                <p className="mt-1 text-[0.78rem] leading-tight text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-          {relayFrom && (
-            <p className="mt-2 text-[0.68rem] tracking-[0.14em] text-[#777]" style={{ fontFamily: "var(--font-tech)" }}>
-              {t("welcome.relayUpstream")} {relayFrom}
-            </p>
-          )}
         </motion.div>
       )}
 

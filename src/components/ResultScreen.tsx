@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
-import { Copy, Maximize2, Minimize2, RotateCcw, Share2 } from "lucide-react";
+import { Copy, Maximize2, Minimize2, RotateCcw, Share2, Users, X } from "lucide-react";
 import type { FullResult, Grade, MatchResult } from "@/lib/types";
 import { DIMENSIONS } from "@/lib/types";
 import { buildShareUrl, createShareId, normalizeRelayDepth, trackEvent } from "@/lib/analytics";
@@ -764,6 +764,8 @@ export default function ResultScreen({
   const [inviteNameInput, setInviteNameInput] = useState("");
   const [relayBranchCount, setRelayBranchCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const shareModalTriggeredRef = useRef(false);
   const successfulInviteKeysRef = useRef<Set<RelayInviteKey>>(new Set());
   const trackedRelayBranchReadyRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -782,6 +784,21 @@ export default function ResultScreen({
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      if (shareModalTriggeredRef.current) return;
+      const threshold = 60;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < threshold) {
+        shareModalTriggeredRef.current = true;
+        setShowShareModal(true);
+      }
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
   const top = result.top;
   const profile = getProfile(top);
@@ -1579,112 +1596,182 @@ export default function ResultScreen({
       </motion.section>
 
       <motion.section
-        className="px-5 pt-5 pb-8 border-t border-white/10"
+        className="px-5 pt-5 pb-8"
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.35 }}
       >
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <button
-            onClick={shareResult}
-            className="h-12 border text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
-            style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
-          >
-            <Share2 size={15} aria-hidden="true" />
-            SHARE
-          </button>
-          <button
-            onClick={() => copyResult("copy")}
-            className="h-12 border border-white/15 text-[#aaa] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
-            style={{ fontFamily: "var(--font-tech)" }}
-          >
-            <Copy size={15} aria-hidden="true" />
-            {copied ? "COPIED" : "COPY"}
-          </button>
+        <div className="flex gap-3">
           <button
             onClick={onRestart}
-            className="h-12 border border-white/15 text-[#888] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+            className="h-12 flex-1 border border-white/15 text-[#888] text-[0.74rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
             style={{ fontFamily: "var(--font-tech)" }}
           >
             <RotateCcw size={15} aria-hidden="true" />
             RETEST
           </button>
-        </div>
-
-        <div
-          className="border border-white/10 p-4"
-          style={{
-            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
-          }}
-        >
-          <div className="mb-3">
-            <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
-              NEXT RELAY
-            </h2>
-            <p className="mt-2 text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-              {invitePrompt}
-              <span className="block mt-1 text-[#aaa]">{relayPrompt}</span>
-            </p>
-          </div>
-
-          <label className="mb-3 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
-            <span className="block text-[0.54rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-              DIRECT CALL
-            </span>
-            <input
-              value={inviteNameInput}
-              onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
-              maxLength={12}
-              placeholder="填一个称呼，分享会更像点名"
-              className="mt-2 h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
-              style={{ fontFamily: "var(--font-title)" }}
-            />
-            <span className="block mt-1 text-[0.68rem] text-[#666]">
-              {hasNamedInvite ? "已切换为点名接力。" : "不填也可以直接发送。"}
-            </span>
-          </label>
-
-          <div className="grid grid-cols-2 min-[430px]:grid-cols-4 gap-2">
-            {relayInviteOptions.map((invite) => (
-              <button
-                key={invite.key}
-                onClick={() => shareInvite(invite)}
-                className="min-h-[56px] border border-white/10 px-2 py-2 text-left transition-colors hover:border-white/30 flex flex-col justify-between"
-                style={{ background: "rgba(0,0,0,0.2)" }}
-              >
-                <span className="text-[0.56rem] tracking-[0.14em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                  {invite.label}
-                </span>
-                <span className="mt-1 text-[0.88rem] leading-tight text-[#e5e5e5]" style={{ fontFamily: "var(--font-title)" }}>
-                  {copiedInviteKey === invite.key ? "READY" : invite.title}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[0.72rem] leading-[1.55] text-[#888]" style={{ fontFamily: "var(--font-title)" }}>
-              {relayBranchCount >= 2
-                ? "两条邀请已发出，编队开始分支。"
-                : "建议发给两个不同位置的人，让编队分出去。"}
-            </span>
-            <span className="text-[0.72rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
-              {relayBranchCount}/2
-            </span>
-          </div>
-        </div>
-
-        {relayRelation ? (
           <button
-            onClick={shareReturn}
-            className="mt-3 w-full h-10 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
-            style={{ fontFamily: "var(--font-tech)" }}
+            onClick={() => setShowShareModal(true)}
+            className="h-12 flex-[2] border text-[0.82rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2.5 transition-colors"
+            style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
           >
-            <Share2 size={13} aria-hidden="true" />
-            {returnCopied ? "READY" : "SEND RETURN TO UPSTREAM"}
+            <Users size={17} aria-hidden="true" />
+            分享给朋友
           </button>
-        ) : null}
+        </div>
       </motion.section>
+
+      {showShareModal && (
+        <motion.div
+          className="fixed inset-0 z-50 flex flex-col overflow-y-auto no-scrollbar"
+          style={{ background: "var(--unit-bg)" }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div
+            className="w-full max-w-[600px] mx-auto flex flex-col min-h-full"
+            style={{
+              ...themeStyle,
+              background: "radial-gradient(circle at 80% 0%, var(--unit-glow), transparent 34%), linear-gradient(180deg, var(--unit-bg), #050505 72%)",
+            }}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/10">
+              <span className="text-[0.68rem] text-[#777] tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)" }}>
+                SHARE FILE
+              </span>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="text-[#777] hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 px-5 py-5">
+              <h2
+                className="text-[1.6rem] leading-[1.15] text-white mb-2"
+                style={{ fontFamily: "var(--font-title)" }}
+              >
+                把你的结果发给朋友
+              </h2>
+              <p
+                className="text-[0.92rem] leading-[1.75] text-[#aaa] mb-5"
+                style={{ fontFamily: "var(--font-title)" }}
+              >
+                TA 测完后，你们可以看到两个人的编队对照。
+              </p>
+
+              <div
+                className="border border-white/10 p-4 mb-5"
+                style={{
+                  background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
+                  borderLeft: "3px solid var(--unit-primary)",
+                }}
+              >
+                <p className="text-[0.62rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
+                  YOUR RESULT
+                </p>
+                <p className="text-[1.15rem] text-white mb-1" style={{ fontFamily: "var(--font-title)" }}>
+                  {profile.displayName}
+                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-[0.82rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
+                    SYNC {top.similarity.toFixed(1)}%
+                  </span>
+                  <span className="text-[0.82rem] text-[#555]">|</span>
+                  <span className="text-[0.82rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
+                    NODE {relayNodeLabel}
+                  </span>
+                </div>
+                <div
+                  className="border border-white/10 px-3 py-2"
+                  style={{ background: "rgba(0,0,0,0.28)" }}
+                >
+                  <p
+                    className="text-[0.82rem] leading-[1.25] break-all"
+                    style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+                  >
+                    {formationCode}
+                  </p>
+                </div>
+              </div>
+
+              <label className="mb-5 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
+                <span className="block text-[0.56rem] tracking-[0.16em] text-[#666] mb-1" style={{ fontFamily: "var(--font-tech)" }}>
+                  朋友的名字（选填，加了会更像点名）
+                </span>
+                <input
+                  value={inviteNameInput}
+                  onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
+                  maxLength={12}
+                  placeholder="比如：小明"
+                  className="h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
+                  style={{ fontFamily: "var(--font-title)" }}
+                />
+              </label>
+
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => shareInvite(relayInviteOptions[0])}
+                  className="flex-1 h-12 border text-[0.82rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
+                  style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+                >
+                  <Share2 size={15} aria-hidden="true" />
+                  {copiedInviteKey === "general" ? "SENT" : "分享"}
+                </button>
+                <button
+                  onClick={() => copyResult("copy")}
+                  className="flex-1 h-12 border border-white/15 text-[#aaa] text-[0.82rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+                  style={{ fontFamily: "var(--font-tech)" }}
+                >
+                  <Copy size={15} aria-hidden="true" />
+                  {copied ? "COPIED" : "复制文案"}
+                </button>
+              </div>
+
+              {relayRelation && (
+                <button
+                  onClick={shareReturn}
+                  className="w-full h-10 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30 mb-6"
+                  style={{ fontFamily: "var(--font-tech)" }}
+                >
+                  <Share2 size={13} aria-hidden="true" />
+                  {returnCopied ? "SENT" : "回传给上一站"}
+                </button>
+              )}
+
+              <div className="border-t border-white/10 pt-4">
+                <p
+                  className="text-[0.68rem] tracking-[0.18em] text-[#555] mb-3"
+                  style={{ fontFamily: "var(--font-tech)" }}
+                >
+                  朋友测完后会看到
+                </p>
+                <div className="space-y-2">
+                  {[
+                    "TA 自己的机体匹配结果和编队码",
+                    "和你的编队对照分析（同档、同轴或反差）",
+                    "TA 也可以继续分享给下一个人",
+                  ].map((text, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <span
+                        className="text-[0.72rem] mt-0.5 shrink-0"
+                        style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="text-[0.82rem] leading-[1.6] text-[#aaa]" style={{ fontFamily: "var(--font-title)" }}>
+                        {text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

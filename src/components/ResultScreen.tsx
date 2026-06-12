@@ -1245,7 +1245,7 @@ export default function ResultScreen({
       </div>
 
       <motion.section
-        className="relative min-h-[360px] sm:min-h-[260px] px-5 pt-6 pb-7 overflow-hidden border-b border-white/10"
+        className="relative px-5 pt-6 pb-5 overflow-hidden border-b border-white/10"
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
@@ -1333,23 +1333,16 @@ export default function ResultScreen({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.4 }}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="border border-white/10 p-3" style={{ background: "rgba(0,0,0,0.2)" }}>
-            <p className="text-[0.62rem] tracking-[0.18em] mb-3" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
-              ORIGIN
-            </p>
-            <p className="text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-              {profile.lore}
-            </p>
-          </div>
-          <div className="border border-white/10 p-3" style={{ background: "var(--unit-panel)" }}>
-            <p className="text-[0.62rem] tracking-[0.18em] mb-3" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
-              READING
-            </p>
-            <p className="text-[0.9rem] leading-[1.75] text-[#d6d6d6]" style={{ fontFamily: "var(--font-title)" }}>
-              {profile.reading}
-            </p>
-          </div>
+        <p className="text-[0.9rem] leading-[1.8] text-[#d6d6d6] mb-4" style={{ fontFamily: "var(--font-title)" }}>
+          {profile.lore}
+        </p>
+        <p className="text-[0.9rem] leading-[1.8] text-[#d6d6d6] mb-4" style={{ fontFamily: "var(--font-title)" }}>
+          {profile.reading}
+        </p>
+        <div className="border-l-[3px] pl-4" style={{ borderColor: "var(--unit-primary)" }}>
+          <p className="text-[0.92rem] leading-[1.8] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
+            {profile.tension}
+          </p>
         </div>
       </motion.section>
 
@@ -1400,78 +1393,27 @@ export default function ResultScreen({
         className="px-5 py-5 border-b border-white/10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-      >
-        <div className="border-l-[3px] pl-4" style={{ borderColor: "var(--unit-primary)" }}>
-          <p className="text-[0.68rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
-            SYNC NOTE
-          </p>
-          <p className="text-[1rem] leading-[1.8] text-[#ddd]" style={{ fontFamily: "var(--font-title)" }}>
-            {profile.tension}
-          </p>
-        </div>
-      </motion.section>
-
-      <motion.section
-        className="px-5 py-5 border-b border-white/10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
         transition={{ delay: 0.25, duration: 0.4 }}
       >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
+            FORMATION CODE
+          </h2>
+          <span className="text-[0.66rem] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
+            NODE {relayNodeLabel}
+          </span>
+        </div>
+
         <div
-          className="border border-white/10 p-4"
-          style={{
-            background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
-          }}
+          className="min-h-[44px] border border-white/10 px-3 py-2 flex items-center"
+          style={{ background: "rgba(0,0,0,0.28)" }}
         >
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className="text-[0.72rem] tracking-[0.2em]" style={{ color: "var(--unit-accent)", fontFamily: "var(--font-tech)" }}>
-              FORMATION CODE
-            </h2>
-            <span className="text-[0.66rem] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-              COMPARE
-            </span>
-          </div>
-
-          <div
-            className="min-h-[48px] border border-white/10 px-3 py-2 flex items-center"
-            style={{ background: "rgba(0,0,0,0.28)" }}
+          <p
+            className="text-[1.05rem] min-[430px]:text-[1.18rem] leading-[1.25] break-all"
+            style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
           >
-            <p
-              className="text-[1.05rem] min-[430px]:text-[1.18rem] leading-[1.25] break-all"
-              style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
-            >
-              {formationCode}
-            </p>
-          </div>
-
-          <div className="mt-3 grid grid-cols-[78px_minmax(0,1fr)] gap-2">
-            <div className="border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.2)" }}>
-              <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                YOUR NODE
-              </p>
-              <p className="mt-1 text-[1.35rem] leading-none" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}>
-                {relayNodeLabel}
-              </p>
-            </div>
-            <div className="border border-white/10 px-3 py-2 min-w-0" style={{ background: "rgba(0,0,0,0.2)" }}>
-              <p className="text-[0.55rem] tracking-[0.16em] text-[#666]" style={{ fontFamily: "var(--font-tech)" }}>
-                UPSTREAM
-              </p>
-              <p
-                className="mt-1 text-[0.72rem] leading-[1.35] break-all"
-                style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}
-              >
-                {upstreamLabel}
-              </p>
-              {relaySourceUnit && (
-                <p className="mt-1 text-[0.72rem] leading-[1.35] text-[#aaa] break-words" style={{ fontFamily: "var(--font-title)" }}>
-                  {relaySourceUnit}
-                </p>
-              )}
-            </div>
-          </div>
+            {formationCode}
+          </p>
         </div>
       </motion.section>
 
@@ -1623,23 +1565,28 @@ export default function ResultScreen({
 
       {showShareModal && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col overflow-y-auto no-scrollbar"
-          style={{ background: "var(--unit-bg)" }}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          onClick={() => setShowShareModal(false)}
         >
-          <div
-            className="w-full max-w-[600px] mx-auto flex flex-col min-h-full"
-            style={{
-              ...themeStyle,
-              background: "radial-gradient(circle at 80% 0%, var(--unit-glow), transparent 34%), linear-gradient(180deg, var(--unit-bg), #050505 72%)",
-            }}
+          <motion.div
+            className="w-full max-w-[600px] border-t border-white/10 px-5 pt-5 pb-8"
+            style={{ background: "var(--unit-bg)" }}
+            initial={{ y: 300 }}
+            animate={{ y: 0 }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/10">
-              <span className="text-[0.68rem] text-[#777] tracking-[0.18em]" style={{ fontFamily: "var(--font-tech)" }}>
-                SHARE FILE
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                className="text-[1.2rem] text-white"
+                style={{ fontFamily: "var(--font-title)" }}
+              >
+                分享结果
+              </h2>
               <button
                 onClick={() => setShowShareModal(false)}
                 className="text-[#777] hover:text-white transition-colors"
@@ -1648,128 +1595,70 @@ export default function ResultScreen({
               </button>
             </div>
 
-            <div className="flex-1 px-5 py-5">
-              <h2
-                className="text-[1.6rem] leading-[1.15] text-white mb-2"
-                style={{ fontFamily: "var(--font-title)" }}
+            <p className="text-[0.88rem] leading-[1.7] text-[#aaa] mb-5" style={{ fontFamily: "var(--font-title)" }}>
+              发给朋友，TA 测完后你们可以看到编队对照。
+              {relayRelation ? " 也可以回传给上一站。" : ""}
+            </p>
+
+            <div className="flex items-center gap-2 mb-5 border border-white/10 px-3 py-2.5" style={{ background: "rgba(0,0,0,0.3)" }}>
+              <span className="text-[0.78rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}>
+                {profile.marker}
+              </span>
+              <span className="text-[0.88rem] text-white" style={{ fontFamily: "var(--font-title)" }}>
+                {profile.displayName}
+              </span>
+              <span className="text-[0.72rem] text-[#555]">|</span>
+              <span className="text-[0.72rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
+                {top.similarity.toFixed(1)}%
+              </span>
+              <span className="text-[0.72rem] text-[#555]">|</span>
+              <span
+                className="text-[0.72rem] break-all"
+                style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
               >
-                把你的结果发给朋友
-              </h2>
-              <p
-                className="text-[0.92rem] leading-[1.75] text-[#aaa] mb-5"
-                style={{ fontFamily: "var(--font-title)" }}
-              >
-                TA 测完后，你们可以看到两个人的编队对照。
-              </p>
-
-              <div
-                className="border border-white/10 p-4 mb-5"
-                style={{
-                  background: "linear-gradient(135deg, var(--unit-panel), rgba(0,0,0,0.28))",
-                  borderLeft: "3px solid var(--unit-primary)",
-                }}
-              >
-                <p className="text-[0.62rem] tracking-[0.18em] mb-2" style={{ color: "var(--unit-muted)", fontFamily: "var(--font-tech)" }}>
-                  YOUR RESULT
-                </p>
-                <p className="text-[1.15rem] text-white mb-1" style={{ fontFamily: "var(--font-title)" }}>
-                  {profile.displayName}
-                </p>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-[0.82rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
-                    SYNC {top.similarity.toFixed(1)}%
-                  </span>
-                  <span className="text-[0.82rem] text-[#555]">|</span>
-                  <span className="text-[0.82rem]" style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}>
-                    NODE {relayNodeLabel}
-                  </span>
-                </div>
-                <div
-                  className="border border-white/10 px-3 py-2"
-                  style={{ background: "rgba(0,0,0,0.28)" }}
-                >
-                  <p
-                    className="text-[0.82rem] leading-[1.25] break-all"
-                    style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
-                  >
-                    {formationCode}
-                  </p>
-                </div>
-              </div>
-
-              <label className="mb-5 block border border-white/10 px-3 py-2" style={{ background: "rgba(0,0,0,0.18)" }}>
-                <span className="block text-[0.56rem] tracking-[0.16em] text-[#666] mb-1" style={{ fontFamily: "var(--font-tech)" }}>
-                  朋友的名字（选填，加了会更像点名）
-                </span>
-                <input
-                  value={inviteNameInput}
-                  onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
-                  maxLength={12}
-                  placeholder="比如：小明"
-                  className="h-9 w-full border border-white/10 bg-black/30 px-3 text-[0.85rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
-                  style={{ fontFamily: "var(--font-title)" }}
-                />
-              </label>
-
-              <div className="flex gap-3 mb-6">
-                <button
-                  onClick={() => shareInvite(relayInviteOptions[0])}
-                  className="flex-1 h-12 border text-[0.82rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors"
-                  style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
-                >
-                  <Share2 size={15} aria-hidden="true" />
-                  {copiedInviteKey === "general" ? "SENT" : "分享"}
-                </button>
-                <button
-                  onClick={() => copyResult("copy")}
-                  className="flex-1 h-12 border border-white/15 text-[#aaa] text-[0.82rem] tracking-[0.14em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
-                  style={{ fontFamily: "var(--font-tech)" }}
-                >
-                  <Copy size={15} aria-hidden="true" />
-                  {copied ? "COPIED" : "复制文案"}
-                </button>
-              </div>
-
-              {relayRelation && (
-                <button
-                  onClick={shareReturn}
-                  className="w-full h-10 border border-white/15 text-[0.62rem] tracking-[0.14em] text-[#aaa] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30 mb-6"
-                  style={{ fontFamily: "var(--font-tech)" }}
-                >
-                  <Share2 size={13} aria-hidden="true" />
-                  {returnCopied ? "SENT" : "回传给上一站"}
-                </button>
-              )}
-
-              <div className="border-t border-white/10 pt-4">
-                <p
-                  className="text-[0.68rem] tracking-[0.18em] text-[#555] mb-3"
-                  style={{ fontFamily: "var(--font-tech)" }}
-                >
-                  朋友测完后会看到
-                </p>
-                <div className="space-y-2">
-                  {[
-                    "TA 自己的机体匹配结果和编队码",
-                    "和你的编队对照分析（同档、同轴或反差）",
-                    "TA 也可以继续分享给下一个人",
-                  ].map((text, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <span
-                        className="text-[0.72rem] mt-0.5 shrink-0"
-                        style={{ color: "var(--unit-secondary)", fontFamily: "var(--font-num)" }}
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className="text-[0.82rem] leading-[1.6] text-[#aaa]" style={{ fontFamily: "var(--font-title)" }}>
-                        {text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                {formationCode}
+              </span>
             </div>
-          </div>
+
+            <input
+              value={inviteNameInput}
+              onChange={(event) => setInviteNameInput(event.target.value.slice(0, 12))}
+              maxLength={12}
+              placeholder="朋友的名字（选填）"
+              className="mb-4 h-10 w-full border border-white/10 bg-black/30 px-3 text-[0.88rem] text-[#e5e5e5] outline-none transition-colors placeholder:text-[#555] focus:border-white/30"
+              style={{ fontFamily: "var(--font-title)" }}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => shareInvite(relayInviteOptions[0])}
+                className="flex-1 h-11 border text-[0.88rem] tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-colors"
+                style={{ borderColor: "var(--unit-primary)", color: "var(--unit-secondary)", fontFamily: "var(--font-tech)" }}
+              >
+                <Share2 size={15} aria-hidden="true" />
+                {copiedInviteKey === "general" ? "SENT" : "分享"}
+              </button>
+              <button
+                onClick={() => copyResult("copy")}
+                className="flex-1 h-11 border border-white/15 text-[#aaa] text-[0.88rem] tracking-[0.1em] uppercase flex items-center justify-center gap-2 transition-colors hover:text-white hover:border-white/30"
+                style={{ fontFamily: "var(--font-tech)" }}
+              >
+                <Copy size={15} aria-hidden="true" />
+                {copied ? "COPIED" : "复制"}
+              </button>
+            </div>
+
+            {relayRelation && (
+              <button
+                onClick={shareReturn}
+                className="mt-3 w-full h-10 border border-white/15 text-[0.72rem] tracking-[0.12em] text-[#888] flex items-center justify-center gap-1.5 transition-colors hover:text-white hover:border-white/30"
+                style={{ fontFamily: "var(--font-tech)" }}
+              >
+                <Share2 size={13} aria-hidden="true" />
+                {returnCopied ? "SENT" : "回传给上一站"}
+              </button>
+            )}
+          </motion.div>
         </motion.div>
       )}
     </div>
